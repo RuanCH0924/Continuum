@@ -139,7 +139,7 @@ python -m unittest discover -s tests -v
 | 层 | 技术 | 说明 |
 | --- | --- | --- |
 | 语言 | Python 3.9+ | 成熟稳定、生态丰富、跨平台 |
-| GUI | Tkinter（标准库） | 零第三方框架依赖，原生轻量 |
+| GUI | PySide6（Qt 6） | 原生 Qt 控件 + QSS 主题，成熟稳定、跨平台 |
 | 全局热键 | pynput | 键盘监听与全局快捷键 |
 | 窗口控制 | pygetwindow | 目标窗口定位与激活 |
 | 剪贴板 | pyperclip | 剪贴板读写 |
@@ -147,7 +147,7 @@ python -m unittest discover -s tests -v
 | 配置 | JSON + 自研 Config 管理 | 外置配置、本地持久化 |
 | 日志 | logging | 文件 + 控制台双通道 |
 
-**规划演进方向**：统一 AI 适配层（OpenAI 兼容协议）、SQLite 数据存储、本地向量检索（RAG）、TTS 引擎适配、打包分发（PyInstaller / Nuitka）。
+**规划演进方向**：统一 AI 适配层（OpenAI 兼容协议）、SQLite 数据存储、本地向量检索（RAG）、TTS 引擎适配、Web 级 Markdown 编辑器（QWebEngineView 内嵌）、打包分发（PyInstaller / Nuitka）。
 
 ---
 

@@ -15,7 +15,11 @@ MODULES = [
     "continuum.core.hotkey_service",
     "continuum.core.transcription_service",
     "continuum.gui.app",
-    "continuum.gui.components.hover_button",
+    "continuum.gui.theme",
+    "continuum.gui.components.buttons",
+    "continuum.gui.views.editor_view",
+    "continuum.gui.views.log_view",
+    "continuum.gui.views.config_dialog",
     "continuum.utils.clipboard_utils",
     "continuum.utils.random_utils",
 ]

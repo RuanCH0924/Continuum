@@ -3,6 +3,7 @@
 
 import logging
 import os
+import sys
 
 # 配置日志
 log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
@@ -19,17 +20,22 @@ logging.basicConfig(
     ]
 )
 
-from continuum.gui.app import WritingAssistantApp
+from PySide6.QtWidgets import QApplication
+from continuum.gui.app import MainWindow
+
 
 def main():
     """主函数"""
-    app = WritingAssistantApp()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
     try:
-        app.run()
+        sys.exit(app.exec())
     except KeyboardInterrupt:
         pass
     finally:
-        app.cleanup()
+        window.cleanup()
+
 
 if __name__ == "__main__":
     main()
