@@ -5,6 +5,12 @@ import logging
 import os
 import sys
 
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
+
+# WebEngine 与 OpenGL 上下文共享要求（必须在 QApplication 创建前设置）
+QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
+
 # 配置日志
 log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(log_dir, exist_ok=True)
@@ -20,7 +26,6 @@ logging.basicConfig(
     ]
 )
 
-from PySide6.QtWidgets import QApplication
 from continuum.gui.app import MainWindow
 
 

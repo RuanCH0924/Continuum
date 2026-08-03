@@ -47,3 +47,11 @@ RANDOM_GENERATION_CONFIG = {
     'chinese_start_unicode': 0x4e00,
     'chinese_end_unicode': 0x9fff
 }
+
+# 编辑器配置
+EDITOR_CONFIG = {
+    'default_theme': 'light',       # light | dark
+    'default_mode': 'split',        # edit | split | preview
+    'autosave_interval': 30,        # 草稿自动保存间隔（秒）
+    'word_target': 0                # 每日目标字数（0 表示不启用）
+}

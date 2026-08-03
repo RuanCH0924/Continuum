@@ -17,6 +17,9 @@ launch_log.txt
 # ---- 用户配置（含 API 密钥，禁止入库）----
 config/coze_config.json
 
+# ---- 用户数据（作品/章节/草稿/状态/AI 配置）----
+data/
+
 # ---- 测试与覆盖率 ----
 .pytest_cache/
 .coverage
