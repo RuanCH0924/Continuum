@@ -12,7 +12,7 @@ import { turndown } from '../lib/markdown'
 import type { ToastKind } from '../stores/toastStore'
 import type { Editor } from '@tiptap/react'
 
-const MENU_LABELS = ['文件', '编辑', '插入', '视图', '工具', '设置'] as const
+const MENU_LABELS = ['文件', '编辑', '插入', '视图', '工具'] as const
 
 interface MenuItem {
   label?: string
@@ -156,8 +156,8 @@ export function Header(): React.JSX.Element {
       }
     ],
     视图: [{ label: immersed ? '退出沉浸模式' : '沉浸模式', hint: 'F11', run: () => toggleImmersive() }],
-    工具: [{ label: '打开辅助工具', run: () => setToolsOpen(true) }],
-    设置: [{ label: '设置中心', run: () => setSettingsOpen(true) }]
+    工具: [{ label: '打开辅助工具', run: () => setToolsOpen(true) }]
+    // 「设置」为单击直达按钮：点击直接打开设置弹窗，不展开下拉菜单。
   }
 
   const themeIcon = theme === 'dark' || theme === 'sepia-dark' ? 'sun' : theme === 'high-contrast' ? 'moon' : 'sun'
@@ -210,6 +210,14 @@ export function Header(): React.JSX.Element {
               )}
             </div>
           ))}
+          {/* 「设置」单击直达：点击直接打开设置中心弹窗，无下拉菜单。 */}
+          <button
+            className="top-menu-btn"
+            title="设置中心（Ctrl+,）"
+            onClick={() => setSettingsOpen(true)}
+          >
+            设置
+          </button>
         </nav>
 
         <div className="flex items-center gap-1">

@@ -51,16 +51,26 @@ describe('菜单栏调整：AI 条目移除 / 视图精简 / 设置菜单保留�
     expect(screen.queryByText('格式设置')).toBeNull()
   })
 
-  it('设置菜单保留入口：点击「设置中心」打开整合后的设置弹窗', () => {
+  it('设置菜单保留入口：单击「设置」直接打开整合后的设置弹窗（无二级菜单）', () => {
     stubSettingsApi()
     render(<Header />)
     fireEvent.click(screen.getByRole('button', { name: '设置' }))
-    fireEvent.click(screen.getByText('设置中心'))
+    // 单击直达：不展开下拉菜单，直接置位 settingsOpen
     expect(useUiStore.getState().settingsOpen).toBe(true)
+    expect(screen.queryByText('设置中心')).toBeNull()
   })
 })
 
-describe('设置弹窗：整合 AI 服务与格式设置', () => {
+describe('设置弹窗：左右分栏（左侧固定侧边栏 + 右侧内容区）', () => {
+  it('左侧侧边栏集中展示全部设置大类（AI 服务 / 格式）', () => {
+    stubSettingsApi()
+    render(<SettingsDialog onClose={() => {}} />)
+    // 两个分类同时展示在侧边栏，默认选中「AI 服务」
+    expect(screen.getByRole('button', { name: 'AI 服务' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '格式' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'AI 服务' }).className).toContain('brand-50')
+  })
+
   it('打开后默认展示 AI 服务全部设置项', () => {
     stubSettingsApi()
     render(<SettingsDialog onClose={() => {}} />)
@@ -70,11 +80,11 @@ describe('设置弹窗：整合 AI 服务与格式设置', () => {
     expect(screen.getByText('模型')).toBeInTheDocument()
     expect(screen.getByText('温度（随机性）')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '校验连接' })).toBeInTheDocument()
-    // 格式设置项不在 AI Tab
+    // 格式设置项不在 AI 分类
     expect(screen.queryByText('正文字号（100%）')).toBeNull()
   })
 
-  it('切换到格式 Tab：格式设置项完整展示（字号/行距/缩进/打字机/行号）', () => {
+  it('切换到格式分类：格式设置项完整展示（字号/行距/缩进/打字机/行号）', () => {
     stubSettingsApi()
     render(<SettingsDialog onClose={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: '格式' }))
@@ -83,11 +93,11 @@ describe('设置弹窗：整合 AI 服务与格式设置', () => {
     expect(screen.getByText('首行缩进（2em）')).toBeInTheDocument()
     expect(screen.getByText('打字机模式（光标垂直居中）')).toBeInTheDocument()
     expect(screen.getByText('源码模式显示行号')).toBeInTheDocument()
-    // AI 设置项不在格式 Tab
+    // AI 设置项不在格式分类
     expect(screen.queryByText('服务商')).toBeNull()
   })
 
-  it('格式 Tab：保存设置项 → 写入 settings 并关闭弹窗', async () => {
+  it('格式分类：保存设置项 → 写入 settings 并关闭弹窗', async () => {
     const { set } = stubSettingsApi()
     const onClose = vi.fn()
     render(<SettingsDialog onClose={onClose} />)
@@ -97,7 +107,7 @@ describe('设置弹窗：整合 AI 服务与格式设置', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
-  it('AI 服务 Tab：修改并保存设置项 → 持久化 ai 配置并关闭弹窗', async () => {
+  it('AI 服务分类：修改并保存设置项 → 持久化 ai 配置并关闭弹窗', async () => {
     const { set } = stubSettingsApi()
     const onClose = vi.fn()
     render(<SettingsDialog onClose={onClose} />)

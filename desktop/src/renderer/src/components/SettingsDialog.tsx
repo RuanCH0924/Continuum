@@ -13,7 +13,9 @@ const TABS: { key: SettingsTab; label: string }[] = [
 ]
 
 /**
- * 设置中心（整合原设置菜单全部设置项）：AI 服务 + 格式。
+ * 设置中心（左右分栏布局）：
+ * - 左侧固定侧边栏：分类切换（AI 服务 / 格式…），集中展示、单击切换。
+ * - 右侧内容区：当前选中分类的设置表单。
  * 各设置项的交互、数据存储与生效方式与原独立弹窗完全一致。
  */
 export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.Element {
@@ -22,35 +24,51 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onMouseDown={onClose}>
       <div
-        className="w-[520px] rounded-lg border border-neutral-200 bg-neutral-0 shadow-3"
+        className="flex h-[480px] w-[640px] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 shadow-3"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center border-b border-neutral-200 px-5 py-3">
-          <span className="text-[14px] font-semibold text-neutral-900">设置</span>
-          <span className="ml-2 text-[11px] text-neutral-500">本地保存 · 即时生效</span>
-          <button className="ml-auto rounded p-1 text-neutral-500 hover:bg-neutral-100" onClick={onClose}>
-            ✕
-          </button>
-        </div>
+        {/* 左侧：分类侧边栏 */}
+        <aside className="flex w-[160px] shrink-0 flex-col border-r border-neutral-200 bg-neutral-50">
+          <div className="flex items-center px-4 py-3">
+            <span className="text-[14px] font-semibold text-neutral-900">设置</span>
+            <span className="ml-2 text-[11px] text-neutral-500">本地</span>
+          </div>
+          <nav className="flex flex-1 flex-col gap-0.5 px-2 pb-3">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                className={`block w-full rounded-md px-3 py-2 text-left text-[12px] transition-colors duration-fast ${
+                  tab === t.key
+                    ? 'bg-brand-50 font-medium text-brand-500'
+                    : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
+                }`}
+                onClick={() => setTab(t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-        {/* Tab 切换 */}
-        <div className="flex gap-1 px-5 pt-3">
-          {TABS.map((t) => (
+        {/* 右侧：内容区 */}
+        <section className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-center border-b border-neutral-200 px-5 py-3">
+            <span className="text-[13px] font-medium text-neutral-900">
+              {TABS.find((t) => t.key === tab)?.label}
+            </span>
+            <span className="ml-2 text-[11px] text-neutral-500">本地保存 · 即时生效</span>
             <button
-              key={t.key}
-              className={`rounded-md px-3 py-1.5 text-[12px] transition-colors duration-fast ${
-                tab === t.key
-                  ? 'bg-brand-50 font-medium text-brand-500'
-                  : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
-              }`}
-              onClick={() => setTab(t.key)}
+              className="ml-auto rounded p-1 text-neutral-500 hover:bg-neutral-100"
+              onClick={onClose}
+              title="关闭（Esc）"
             >
-              {t.label}
+              ✕
             </button>
-          ))}
-        </div>
-
-        {tab === 'ai' ? <AiServiceSection onSaved={onClose} /> : <FormatSettingsSection onSaved={onClose} />}
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {tab === 'ai' ? <AiServiceSection onSaved={onClose} /> : <FormatSettingsSection onSaved={onClose} />}
+          </div>
+        </section>
       </div>
     </div>
   )
