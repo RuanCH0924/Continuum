@@ -270,7 +270,7 @@ export function Sidebar({
 
   if (collapsed) {
     return (
-      <aside className="flex w-[48px] shrink-0 flex-col items-center gap-1 border-r border-neutral-200 bg-neutral-50 pt-2">
+      <aside className="flex h-full w-full shrink-0 flex-col items-center gap-1 border-r border-neutral-200 bg-neutral-50 pt-2">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -723,7 +723,7 @@ export function Sidebar({
   }
 
   return (
-    <aside className="flex w-[280px] shrink-0 flex-col border-r border-neutral-200 bg-neutral-50">
+    <aside className="flex h-full w-full shrink-0 flex-col border-r border-neutral-200 bg-neutral-50">
       {/* 顶部操作行 */}
       <div className="flex items-center gap-1.5 px-2 pt-2">
         <button

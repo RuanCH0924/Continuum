@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react'
 import { PROVIDER_PRESETS, presetByKey } from '../lib/ai/registry'
 import { validateConfig } from '../lib/ai/openaiCompat'
 import { useAiStore } from '../stores/aiStore'
+import { useAppStore } from '../stores/appStore'
 import { FormatSettingsSection } from './FormatSettings'
 import type { AIConfig } from '../lib/ai/types'
 
-type SettingsTab = 'ai' | 'format'
+type SettingsTab = 'ai' | 'format' | 'goal'
 
 const TABS: { key: SettingsTab; label: string }[] = [
   { key: 'ai', label: 'AI 服务' },
-  { key: 'format', label: '格式' }
+  { key: 'format', label: '格式' },
+  { key: 'goal', label: '写作目标' }
 ]
 
 /**
@@ -66,7 +68,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.
             </button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {tab === 'ai' ? <AiServiceSection onSaved={onClose} /> : <FormatSettingsSection onSaved={onClose} />}
+            {tab === 'ai' && <AiServiceSection onSaved={onClose} />}
+            {tab === 'format' && <FormatSettingsSection onSaved={onClose} />}
+            {tab === 'goal' && <GoalSection onSaved={onClose} />}
           </div>
         </section>
       </div>
@@ -208,6 +212,114 @@ function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Eleme
         <button className="btn-default" onClick={() => void handleValidate()} disabled={validating}>
           {validating ? '校验中…' : '校验连接'}
         </button>
+        <button className="btn-primary" onClick={() => void handleSave()} disabled={saving}>
+          {saving ? '保存中…' : '保存'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+/** 写作目标设置：每日字数目标 + 今日写作字数指标看板。 */
+function GoalSection({ onSaved }: { onSaved: () => void }): React.JSX.Element {
+  const dailyGoal = useAppStore((s) => s.dailyGoal)
+  const todayChars = useAppStore((s) => s.todayChars)
+  const charCount = useAppStore((s) => s.charCount)
+  const setDailyGoal = useAppStore((s) => s.setDailyGoal)
+  const [goal, setGoal] = useState(dailyGoal)
+  const [saving, setSaving] = useState(false)
+
+  // 进入页面时刷新最新统计，并保持输入与已保存目标同步
+  useEffect(() => {
+    void useAppStore.getState().loadStats()
+  }, [])
+  useEffect(() => {
+    setGoal(dailyGoal)
+  }, [dailyGoal])
+
+  const pct = dailyGoal > 0 ? Math.min(100, Math.round((todayChars / dailyGoal) * 100)) : 0
+  const reached = pct >= 100
+  const remain = Math.max(0, dailyGoal - todayChars)
+
+  const handleSave = async (): Promise<void> => {
+    const g = Math.max(0, Math.floor(Number(goal) || 0))
+    if (g <= 0) return
+    setSaving(true)
+    await setDailyGoal(g)
+    setSaving(false)
+    onSaved()
+  }
+
+  return (
+    <>
+      <div className="space-y-4 overflow-y-auto px-5 py-4 text-[12px]">
+        {/* 关键写作字数指标看板 */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <div className="text-[10px] text-neutral-400">今日已写</div>
+            <div className="mt-0.5 text-[16px] font-semibold tabular-nums text-neutral-900">
+              {todayChars.toLocaleString('zh-CN')}
+            </div>
+          </div>
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <div className="text-[10px] text-neutral-400">今日目标</div>
+            <div className="mt-0.5 text-[16px] font-semibold tabular-nums text-neutral-900">
+              {dailyGoal.toLocaleString('zh-CN')}
+            </div>
+          </div>
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <div className="text-[10px] text-neutral-400">完成进度</div>
+            <div
+              className={`mt-0.5 text-[16px] font-semibold tabular-nums ${
+                reached ? 'text-status-success' : 'text-neutral-900'
+              }`}
+            >
+              {pct}%
+            </div>
+          </div>
+        </div>
+
+        {/* 今日进度条 */}
+        <div>
+          <div className="mb-1 flex items-center justify-between text-[11px] text-neutral-400">
+            <span>今日进度</span>
+            <span className={reached ? 'font-medium text-status-success' : ''}>
+              {reached ? '目标已达成' : `还差 ${remain.toLocaleString('zh-CN')} 字`}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+            <div
+              className={`h-full rounded-full transition-all duration-base ${
+                reached ? 'bg-status-success' : 'bg-gradient-to-r from-brand-500 to-brand-300'
+              }`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* 当前章节字数 */}
+        <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+          <span className="text-neutral-500">当前章节字数</span>
+          <span className="font-medium tabular-nums text-neutral-900">
+            {charCount.toLocaleString('zh-CN')}
+          </span>
+        </div>
+
+        {/* 每日目标设置 */}
+        <label className="block">
+          <span className="mb-1 block text-neutral-500">每日目标字数</span>
+          <input
+            type="number"
+            min={0}
+            step={100}
+            value={goal}
+            onChange={(e) => setGoal(Number(e.target.value))}
+            className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500"
+          />
+        </label>
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-neutral-200 px-5 py-3">
         <button className="btn-primary" onClick={() => void handleSave()} disabled={saving}>
           {saving ? '保存中…' : '保存'}
         </button>

@@ -8,6 +8,7 @@ import { SettingsDialog } from '../src/renderer/src/components/SettingsDialog'
 import { FormatSettings } from '../src/renderer/src/components/FormatSettings'
 import { useUiStore } from '../src/renderer/src/stores/uiStore'
 import { useAiStore } from '../src/renderer/src/stores/aiStore'
+import { useAppStore } from '../src/renderer/src/stores/appStore'
 
 function stubApi(api: unknown): void {
   ;(window as unknown as { api?: unknown }).api = api
@@ -28,6 +29,7 @@ afterEach(() => {
   delete (window as unknown as { api?: unknown }).api
   useUiStore.setState({ settingsOpen: false, formatOpen: false, theme: 'light', aiCollapsed: false })
   useAiStore.setState({ configLoaded: false })
+  useAppStore.setState({ todayChars: 0, dailyGoal: 2500, charCount: 0, lastSavedAt: null })
 })
 
 describe('菜单栏调整：AI 条目移除 / 视图精简 / 设置菜单保留入口', () => {
@@ -62,12 +64,13 @@ describe('菜单栏调整：AI 条目移除 / 视图精简 / 设置菜单保留�
 })
 
 describe('设置弹窗：左右分栏（左侧固定侧边栏 + 右侧内容区）', () => {
-  it('左侧侧边栏集中展示全部设置大类（AI 服务 / 格式）', () => {
+  it('左侧侧边栏集中展示全部设置大类（AI 服务 / 格式 / 写作目标）', () => {
     stubSettingsApi()
     render(<SettingsDialog onClose={() => {}} />)
-    // 两个分类同时展示在侧边栏，默认选中「AI 服务」
+    // 全部分类同时展示在侧边栏，默认选中「AI 服务」
     expect(screen.getByRole('button', { name: 'AI 服务' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '格式' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '写作目标' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'AI 服务' }).className).toContain('brand-50')
   })
 
@@ -117,6 +120,39 @@ describe('设置弹窗：左右分栏（左侧固定侧边栏 + 右侧内容区�
     await waitFor(() =>
       expect(set).toHaveBeenCalledWith('ai', expect.objectContaining({ model: 'deepseek-coder' }))
     )
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('写作目标分类：展示今日已写 / 今日目标 / 完成进度等字数指标', async () => {
+    const get = vi.fn(async (key: string) => {
+      if (key === 'stats') return { todayChars: 1000, todayDate: new Date().toISOString().slice(0, 10), goalNotified: false }
+      if (key === 'dailyGoal') return 2500
+      return null
+    })
+    stubApi({ settings: { get, set: vi.fn(async () => true) } })
+    render(<SettingsDialog onClose={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: '写作目标' }))
+    // 等待 loadStats 异步刷新完成
+    await screen.findByText('1,000')
+    // 指标看板
+    expect(screen.getByText('今日已写')).toBeInTheDocument()
+    expect(screen.getByText('今日目标')).toBeInTheDocument()
+    expect(screen.getByText('完成进度')).toBeInTheDocument()
+    expect(screen.getByText('40%')).toBeInTheDocument() // 1000 / 2500
+    expect(screen.getByText('还差 1,500 字')).toBeInTheDocument()
+    // 当前章节字数 + 目标输入
+    expect(screen.getByText('当前章节字数')).toBeInTheDocument()
+    expect(screen.getByText('每日目标字数')).toBeInTheDocument()
+  })
+
+  it('写作目标分类：修改并保存每日目标 → 写入 settings dailyGoal 并关闭弹窗', async () => {
+    const { set } = stubSettingsApi()
+    const onClose = vi.fn()
+    render(<SettingsDialog onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: '写作目标' }))
+    fireEvent.change(screen.getByLabelText('每日目标字数'), { target: { value: '3000' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(set).toHaveBeenCalledWith('dailyGoal', 3000))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
