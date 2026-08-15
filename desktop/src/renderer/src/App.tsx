@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
 import { AIPanel } from './components/AIPanel'
@@ -28,6 +28,12 @@ import { useToastStore } from './stores/toastStore'
 import { useToolsStore } from './stores/toolsStore'
 import { useGlobalHotkeys } from './lib/hotkeys'
 import { saveNow, exportWorkAs } from './lib/editorActions'
+import {
+  SIDEBAR_MIN,
+  AI_MIN,
+  maxSidebarWidth,
+  maxAiWidth
+} from './lib/editorLayout'
 
 /**
  * 续言 Continuum · 三栏 AppShell。
@@ -54,6 +60,8 @@ export default function App(): React.JSX.Element {
   const todayChars = useAppStore((s) => s.todayChars)
   const dailyGoal = useAppStore((s) => s.dailyGoal)
   const [ready, setReady] = React.useState(false)
+  /** 当前窗口宽度：驱动侧栏拖拽上限与缩放钳制（编辑菜单最小安全宽度管控） */
+  const [winW, setWinW] = useState(() => window.innerWidth)
 
   // 首屏：恢复主题 + 加载作品 + 统计 + 格式设置 + FTUE 状态
   useEffect(() => {
@@ -64,6 +72,22 @@ export default function App(): React.JSX.Element {
     void loadWorks().finally(() => setReady(true))
     void useAppStore.getState().loadStats()
   }, [loadWorks])
+
+  // 窗口缩放：同步窗口宽度，并钳制已保存的面板宽度，避免挤占编辑菜单最小安全宽度
+  useEffect(() => {
+    const onResize = (): void => {
+      setWinW(window.innerWidth)
+      const ui = useUiStore.getState()
+      if (ui.sidebarWidth > maxSidebarWidth(window.innerWidth, ui.aiWidth)) {
+        ui.setSidebarWidth(maxSidebarWidth(window.innerWidth, ui.aiWidth))
+      }
+      if (ui.aiWidth > maxAiWidth(window.innerWidth, ui.sidebarWidth)) {
+        ui.setAiWidth(maxAiWidth(window.innerWidth, ui.sidebarWidth))
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // 主题矩阵同步到 html[data-theme]（全部颜色走 CSS 变量，组件无需 dark: 类）
   useEffect(() => {
@@ -247,8 +271,8 @@ export default function App(): React.JSX.Element {
           <ResizeHandle
             direction="left"
             width={sidebarWidth}
-            min={200}
-            max={520}
+            min={SIDEBAR_MIN}
+            max={maxSidebarWidth(winW, aiWidth)}
             onChange={setSidebarWidth}
             onDragEnd={() => void useUiStore.getState().persistPanelSizes()}
           />
@@ -258,8 +282,8 @@ export default function App(): React.JSX.Element {
           <ResizeHandle
             direction="right"
             width={aiWidth}
-            min={240}
-            max={600}
+            min={AI_MIN}
+            max={maxAiWidth(winW, sidebarWidth)}
             onChange={setAiWidth}
             onDragEnd={() => void useUiStore.getState().persistPanelSizes()}
           />
