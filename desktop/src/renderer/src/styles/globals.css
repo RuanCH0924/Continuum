@@ -1,0 +1,319 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============ Design Tokens（浅色，依据《GUI设计规范》§2.2） ============ */
+:root,
+[data-theme='light'] {
+  --brand-500: #2d7ff9;
+  --brand-300: #7ab1ff;
+  --brand-50: #ebf3ff;
+
+  --neutral-0: #ffffff;
+  --neutral-50: #f7f8fa;
+  --neutral-100: #eef1f5;
+  --neutral-200: #e2e6ec;
+  --neutral-300: #cbd2dc;
+  --neutral-500: #8a92a1;
+  --neutral-700: #4a5160;
+  --neutral-900: #1a1d24;
+
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+
+  --focus-ring: rgb(45 127 249 / 35%);
+  --editor-bg: #fdfdfd;
+}
+
+/* ============ Design Tokens（深色） ============ */
+[data-theme='dark'] {
+  --brand-500: #4f8cff;
+  --brand-300: #7ab1ff;
+  --brand-50: #1c2b47;
+
+  --neutral-0: #1a1d24;
+  --neutral-50: #22262f;
+  --neutral-100: #2b303b;
+  --neutral-200: #373d49;
+  --neutral-300: #4a5260;
+  --neutral-500: #9098a6;
+  --neutral-700: #b4bac6;
+  --neutral-900: #e6e8ec;
+
+  --focus-ring: rgb(79 140 255 / 35%);
+  --editor-bg: #1d2129;
+}
+
+/* ============ Design Tokens（护眼浅 · 米黄纸稿） ============ */
+[data-theme='sepia'] {
+  --brand-500: #b07a3c;
+  --brand-300: #cd9d63;
+  --brand-50: #f5ead6;
+
+  --neutral-0: #fbf7ec;
+  --neutral-50: #f7f1e3;
+  --neutral-100: #efe7d4;
+  --neutral-200: #e2d6ba;
+  --neutral-300: #c6b694;
+  --neutral-500: #8a7a5e;
+  --neutral-700: #5a4e3a;
+  --neutral-900: #2e2820;
+
+  --focus-ring: rgb(176 122 60 / 35%);
+  --editor-bg: #faf5e8;
+}
+
+/* ============ Design Tokens（护眼深 · 暗暖纸稿） ============ */
+[data-theme='sepia-dark'] {
+  --brand-500: #d4a35f;
+  --brand-300: #e0b984;
+  --brand-50: #38301f;
+
+  --neutral-0: #2b2721;
+  --neutral-50: #322d26;
+  --neutral-100: #3b352c;
+  --neutral-200: #4a4237;
+  --neutral-300: #5e5548;
+  --neutral-500: #96896f;
+  --neutral-700: #c0b49c;
+  --neutral-900: #e8e0cf;
+
+  --focus-ring: rgb(212 163 95 / 35%);
+  --editor-bg: #2f2a23;
+}
+
+/* ============ Design Tokens（高对比） ============ */
+[data-theme='high-contrast'] {
+  --brand-500: #0047b3;
+  --brand-300: #3b6fd4;
+  --brand-50: #e6eeff;
+
+  --neutral-0: #ffffff;
+  --neutral-50: #f0f0f0;
+  --neutral-100: #e6e6e6;
+  --neutral-200: #b3b3b3;
+  --neutral-300: #808080;
+  --neutral-500: #4d4d4d;
+  --neutral-700: #262626;
+  --neutral-900: #000000;
+
+  --focus-ring: rgb(0 71 179 / 50%);
+  --editor-bg: #ffffff;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply font-ui text-[14px] text-neutral-900 bg-neutral-0;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  button {
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+  }
+}
+
+@layer components {
+  .icon-btn {
+    @apply inline-flex items-center justify-center w-[30px] h-[30px] rounded-md
+      text-neutral-500 transition-colors duration-fast hover:bg-neutral-100
+      hover:text-neutral-900;
+  }
+  .icon-btn-active {
+    @apply bg-brand-50 text-brand-500;
+  }
+  .top-menu-btn {
+    @apply px-2.5 py-1 text-[12px] text-neutral-900 rounded-sm
+      transition-colors duration-fast hover:bg-neutral-100;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
+      bg-brand-500 text-white font-medium text-[13px]
+      transition-colors duration-fast hover:bg-brand-300;
+  }
+  .btn-default {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
+      border border-neutral-200 bg-neutral-0 text-neutral-900 text-[13px]
+      transition-colors duration-fast hover:bg-neutral-100;
+  }
+  /* 字数/今日增量飞入动效（B 组细节） */
+  .char-pop {
+    animation: char-pop 0.6s ease;
+  }
+}
+
+@keyframes char-pop {
+  from {
+    opacity: 0.2;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ============ Markdown 正文（Tiptap 编辑区 / 预览共用，纸稿衬线） ============ */
+.md-prose {
+  font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", serif;
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--neutral-900);
+  word-break: break-word;
+}
+.md-prose p {
+  margin: 0 0 14px;
+  text-indent: 2em;
+}
+.md-prose h1,
+.md-prose h2,
+.md-prose h3 {
+  font-weight: 700;
+  margin: 20px 0 10px;
+  text-indent: 0;
+}
+.md-prose h1 {
+  font-size: 22px;
+  line-height: 1.5;
+}
+.md-prose h2 {
+  font-size: 17px;
+}
+.md-prose h3 {
+  font-size: 15px;
+}
+.md-prose blockquote {
+  margin: 14px 0;
+  padding: 8px 16px;
+  border-left: 3px solid var(--brand-500);
+  background: var(--brand-50);
+  color: var(--neutral-500);
+  text-indent: 0;
+  border-radius: 0 6px 6px 0;
+}
+.md-prose ul,
+.md-prose ol {
+  padding-left: 1.6em;
+  margin: 0 0 14px;
+  text-indent: 0;
+}
+.md-prose li {
+  margin: 0.25em 0;
+}
+.md-prose code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--neutral-100);
+  color: var(--neutral-700);
+  text-indent: 0;
+}
+.md-prose pre {
+  background: var(--neutral-100);
+  padding: 14px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 14px;
+  text-indent: 0;
+}
+.md-prose pre code {
+  background: transparent;
+  padding: 0;
+}
+.md-prose a {
+  color: var(--brand-500);
+  text-decoration: none;
+}
+.md-prose hr {
+  border: none;
+  border-top: 2px solid var(--neutral-200);
+  margin: 20px 0;
+}
+.md-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+.md-prose th,
+.md-prose td {
+  border: 1px solid var(--neutral-200);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+/* ============ Tiptap ============ */
+.ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--neutral-300);
+  pointer-events: none;
+  height: 0;
+}
+
+/* ============ M8 章节标题块（编辑器初始化自动插入的章节名） ============ */
+.chapter-title-block {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--neutral-900);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--neutral-200);
+}
+
+/* ============ M8 伏笔标记（状态色 + 可点击提示） ============ */
+.foreshadow-mark {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0 0.15em;
+  box-shadow: 0 0 0 1px transparent;
+  transition: box-shadow 150ms ease;
+}
+.foreshadow-mark:hover {
+  box-shadow: 0 0 0 1px currentColor;
+}
+.foreshadow-buried {
+  background: color-mix(in srgb, var(--brand-500) 18%, transparent);
+  color: var(--brand-500);
+}
+.foreshadow-active {
+  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
+  color: var(--status-warning);
+}
+.foreshadow-resolved {
+  background: color-mix(in srgb, var(--status-success) 15%, transparent);
+  color: var(--status-success);
+}
+.foreshadow-other {
+  background: var(--neutral-100);
+  color: var(--neutral-500);
+}
+
+/* ============ M8 时间线标注（正文中的时间节点，点击定位时间线条目） ============ */
+.timeline-mark {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0 0.15em;
+  font-weight: 500;
+  background: color-mix(in srgb, #8b5cf6 16%, transparent);
+  color: #8b5cf6;
+  box-shadow: 0 0 0 1px transparent;
+  transition: box-shadow 150ms ease;
+}
+.timeline-mark:hover {
+  box-shadow: 0 0 0 1px #8b5cf6;
+}

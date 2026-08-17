@@ -1,0 +1,10 @@
+node_modules/
+out/
+dist/
+*.log
+.DS_Store
+# 运行时数据（用户作品/设置/AI 配置）不入库，仅示例作品入库
+data/*
+!data/works/
+data/works/*
+!data/works/work_1786620857917_5f4400/

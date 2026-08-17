@@ -4,14 +4,16 @@ import { validateConfig } from '../lib/ai/openaiCompat'
 import { useAiStore } from '../stores/aiStore'
 import { useAppStore } from '../stores/appStore'
 import { FormatSettingsSection } from './FormatSettings'
+import { AboutSection } from './AboutSettings'
 import type { AIConfig } from '../lib/ai/types'
 
-type SettingsTab = 'ai' | 'format' | 'goal'
+type SettingsTab = 'ai' | 'format' | 'goal' | 'about'
 
 const TABS: { key: SettingsTab; label: string }[] = [
   { key: 'ai', label: 'AI 服务' },
   { key: 'format', label: '格式' },
-  { key: 'goal', label: '写作目标' }
+  { key: 'goal', label: '写作目标' },
+  { key: 'about', label: '关于' }
 ]
 
 /**
@@ -26,7 +28,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onMouseDown={onClose}>
       <div
-        className="flex h-[480px] w-[640px] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 shadow-3"
+        className="flex h-[min(560px,80vh)] w-[min(640px,calc(100vw-32px))] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 shadow-3"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* 左侧：分类侧边栏 */}
@@ -58,7 +60,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.
             <span className="text-[13px] font-medium text-neutral-900">
               {TABS.find((t) => t.key === tab)?.label}
             </span>
-            <span className="ml-2 text-[11px] text-neutral-500">本地保存 · 即时生效</span>
+            <span className="ml-2 text-[11px] text-neutral-500">
+              {tab === 'about' ? '版本与更新信息' : '本地保存 · 即时生效'}
+            </span>
             <button
               className="ml-auto rounded p-1 text-neutral-500 hover:bg-neutral-100"
               onClick={onClose}
@@ -71,6 +75,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.
             {tab === 'ai' && <AiServiceSection onSaved={onClose} />}
             {tab === 'format' && <FormatSettingsSection onSaved={onClose} />}
             {tab === 'goal' && <GoalSection onSaved={onClose} />}
+            {tab === 'about' && <AboutSection />}
           </div>
         </section>
       </div>
@@ -220,11 +225,13 @@ function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Eleme
   )
 }
 
-/** 写作目标设置：每日字数目标 + 今日写作字数指标看板。 */
+/** 写作目标设置：每日字数目标 + 今日写作字数指标看板 + 作品字数统计。 */
 function GoalSection({ onSaved }: { onSaved: () => void }): React.JSX.Element {
   const dailyGoal = useAppStore((s) => s.dailyGoal)
   const todayChars = useAppStore((s) => s.todayChars)
   const charCount = useAppStore((s) => s.charCount)
+  const workChars = useAppStore((s) => s.workChars)
+  const totalChars = useAppStore((s) => s.totalChars)
   const setDailyGoal = useAppStore((s) => s.setDailyGoal)
   const [goal, setGoal] = useState(dailyGoal)
   const [saving, setSaving] = useState(false)
@@ -232,6 +239,7 @@ function GoalSection({ onSaved }: { onSaved: () => void }): React.JSX.Element {
   // 进入页面时刷新最新统计，并保持输入与已保存目标同步
   useEffect(() => {
     void useAppStore.getState().loadStats()
+    void useAppStore.getState().refreshWordTotals()
   }, [])
   useEffect(() => {
     setGoal(dailyGoal)
@@ -303,6 +311,25 @@ function GoalSection({ onSaved }: { onSaved: () => void }): React.JSX.Element {
           <span className="font-medium tabular-nums text-neutral-900">
             {charCount.toLocaleString('zh-CN')}
           </span>
+        </div>
+
+        {/* 作品字数统计（当前作品 / 全部作品累计；主进程按正文 + 备注内容全量核算） */}
+        <div>
+          <div className="mb-1 text-[11px] font-medium text-neutral-500">作品字数统计</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+              <div className="text-[10px] text-neutral-400">当前作品总字数</div>
+              <div className="mt-0.5 text-[16px] font-semibold tabular-nums text-neutral-900">
+                {workChars.toLocaleString('zh-CN')}
+              </div>
+            </div>
+            <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+              <div className="text-[10px] text-neutral-400">全部作品累计字数</div>
+              <div className="mt-0.5 text-[16px] font-semibold tabular-nums text-neutral-900">
+                {totalChars.toLocaleString('zh-CN')}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 每日目标设置 */}

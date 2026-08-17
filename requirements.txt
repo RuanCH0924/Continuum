@@ -1,8 +1,0 @@
-pynput
-pygetwindow
-pyperclip
-requests
-PySide6>=6.5
-markdown-it-py
-mdit-py-plugins
-linkify-it-py

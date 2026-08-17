@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Icon, IconName } from './Icon'
 import { KnowledgeBaseTab } from './KnowledgeBaseTab'
 import { ConfirmDialog } from './ConfirmDialog'
+import { ExtractTab } from './ExtractTab'
+import { ChatScopePicker } from './ChatScopePicker'
 import { useAiStore } from '../stores/aiStore'
 import { useUiStore, type AiTabId } from '../stores/uiStore'
 import { useToastStore } from '../stores/toastStore'
@@ -13,7 +15,8 @@ const AI_TABS: { key: AITab; label: string; icon: IconName }[] = [
   { key: 'chat', label: '对话', icon: 'sparkle' },
   { key: 'polish', label: '润色', icon: 'text' },
   { key: 'continue', label: '续写', icon: 'code' },
-  { key: 'kb', label: '知识库', icon: 'search' }
+  { key: 'kb', label: '知识库', icon: 'search' },
+  { key: 'extract', label: '提取', icon: 'list' }
 ]
 
 /** 润色 Tab 内的全部选区工具（A3：润色/改写/翻译/总结）。 */
@@ -50,6 +53,7 @@ export function AIPanel({
   const chatMessages = useAiStore((s) => s.chatMessages)
   const streaming = useAiStore((s) => s.streaming)
   const chatError = useAiStore((s) => s.chatError)
+  const lastInjected = useAiStore((s) => s.lastInjected)
   const tool = useAiStore((s) => s.tool)
   const toolOriginal = useAiStore((s) => s.toolOriginal)
   const toolResult = useAiStore((s) => s.toolResult)
@@ -239,13 +243,19 @@ export function AIPanel({
           </div>
           <span>Enter 发送 · Shift+Enter 换行</span>
         </div>
+        {/* 大纲挂载智能问答：知识库来源 + 引用上下文（PRD v1.0 §10） */}
+        {withKnowledge && (
+          <div className="mt-1.5">
+            <ChatScopePicker />
+          </div>
+        )}
         {/* 透明 AI：注入说明（B 组细节） */}
         {(withContext || withKnowledge) && (
           <div className="mt-1.5 rounded-md bg-neutral-100 px-2 py-1 text-[10px] leading-[1.6] text-neutral-400">
             本次请求将注入：
             {withContext && <span className="ml-1 text-brand-500">当前章节</span>}
             {withContext && withKnowledge && <span> + </span>}
-            {withKnowledge && <span className="text-brand-500">知识库参考片段（RAG）</span>}
+            {withKnowledge && <span className="text-brand-500">{lastInjected ?? '知识库参考片段'}</span>}
           </div>
         )}
       </div>
@@ -415,6 +425,7 @@ export function AIPanel({
         {tab === 'polish' && renderToolTab('polish')}
         {tab === 'continue' && renderToolTab('continue')}
         {tab === 'kb' && renderKb()}
+        {tab === 'extract' && <ExtractTab />}
       </div>
     </aside>
   )

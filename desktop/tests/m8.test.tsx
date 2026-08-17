@@ -3,8 +3,11 @@ import '@testing-library/jest-dom/vitest'
 import React from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Editor as TiptapEditor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
 import { chapterTitleAction } from '../src/renderer/src/lib/chapterTitle'
-import { clueStatusOf, findAnchorRanges, findTextRanges } from '../src/renderer/src/lib/clueLink'
+import { applyForeshadowMarks, clueStatusOf, findAnchorRanges, findClueAnchorRange, findTextRanges } from '../src/renderer/src/lib/clueLink'
+import { ForeshadowMark } from '../src/renderer/src/lib/tiptapExts'
 import { SelectionToolbar } from '../src/renderer/src/components/SelectionToolbar'
 import { Sidebar } from '../src/renderer/src/components/Sidebar'
 import { useEditorStore } from '../src/renderer/src/stores/editorStore'
@@ -71,6 +74,61 @@ describe('M8 伏笔联动：锚点检索与状态推断', () => {
     expect(clueStatusOf(note('进行中'))).toBe('active')
     expect(clueStatusOf(note('已回收'))).toBe('resolved')
     expect(clueStatusOf(note('伏笔·伏'))).toBe('other')
+  })
+
+  it('findClueAnchorRange：同文多出现时按创建偏移消歧（精准关联，避免关联错位）', () => {
+    const textNode = { isText: true, text: '手链出现了两次，第一次在开头，手链第二次在结尾。' }
+    const fakeDoc = {
+      textContent: textNode.text,
+      descendants(cb: (n: unknown, pos: number) => void): void {
+        cb(textNode, 1)
+      }
+    }
+    const fakeEditor = { state: { doc: fakeDoc } } as unknown as Editor
+    // 无偏移 → 取首次出现
+    expect(findClueAnchorRange(fakeEditor, { anchorText: '手链' })).toEqual({ from: 1, to: 3 })
+    // 有偏移且靠近第二次出现 → 取第二次（距 offset=20 最近）
+    expect(findClueAnchorRange(fakeEditor, { anchorText: '手链', anchorOffset: 20 })).toEqual({ from: 16, to: 18 })
+    // 锚点已失效 → null（可实时校验）
+    expect(findClueAnchorRange(fakeEditor, { anchorText: '不存在的锚点' })).toBeNull()
+  })
+
+  it('applyForeshadowMarks：删除伏笔后正文标识同步取消（含删除当前章节最后一个伏笔）', () => {
+    const editor = new TiptapEditor({
+      extensions: [StarterKit, ForeshadowMark],
+      content: '<p>旧车票与神秘的手链都在这里。</p>'
+    })
+    const clueA: Note = { id: 'c1', kind: 'clue', title: '旧车票', tag: '已埋设', content: '', chapterSeq: 1, anchorText: '旧车票', updatedAt: 0 }
+    const clueB: Note = { id: 'c2', kind: 'clue', title: '神秘的手链', tag: '进行中', content: '', chapterSeq: 1, anchorText: '神秘的手链', updatedAt: 0 }
+
+    // 初始：两个伏笔均被标记
+    applyForeshadowMarks(editor, [clueA, clueB], 1)
+    expect(editor.getHTML()).toContain('data-foreshadow')
+
+    // 删除其中一个 → 该伏笔标识消失，另一个保留
+    applyForeshadowMarks(editor, [clueB], 1)
+    const htmlAfterPartial = editor.getHTML()
+    expect(htmlAfterPartial).toContain('data-foreshadow')
+    expect(htmlAfterPartial).not.toContain('data-note-id="c1"')
+
+    // 删除全部伏笔 → 正文中所有伏笔标识同步取消（回归：此前 relevant 为空时提前 return 导致残留）
+    applyForeshadowMarks(editor, [], 1)
+    expect(editor.getHTML()).not.toContain('data-foreshadow')
+    editor.destroy()
+  })
+
+  it('applyForeshadowMarks：归档全部伏笔后正文标识同步取消', () => {
+    const editor = new TiptapEditor({
+      extensions: [StarterKit, ForeshadowMark],
+      content: '<p>旧车票仍在。</p>'
+    })
+    const clue: Note = { id: 'c1', kind: 'clue', title: '旧车票', tag: '已回收', content: '', chapterSeq: 1, anchorText: '旧车票', updatedAt: 0 }
+    applyForeshadowMarks(editor, [clue], 1)
+    expect(editor.getHTML()).toContain('data-foreshadow')
+    // 归档后不再标记
+    applyForeshadowMarks(editor, [{ ...clue, archived: true }], 1)
+    expect(editor.getHTML()).not.toContain('data-foreshadow')
+    editor.destroy()
   })
 })
 

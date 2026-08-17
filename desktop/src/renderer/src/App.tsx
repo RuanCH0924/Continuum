@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar'
 import { AIPanel } from './components/AIPanel'
 import { ResizeHandle } from './components/ResizeHandle'
 import { EditorArea } from './components/EditorArea'
+import { OutlineWorkspace } from './components/outline/OutlineWorkspace'
 import { WelcomeView } from './components/WelcomeView'
 import { SettingsDialog } from './components/SettingsDialog'
 import { CommandPalette } from './components/CommandPalette'
@@ -44,6 +45,7 @@ export default function App(): React.JSX.Element {
   const immersed = useUiStore((s) => s.immersed)
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed)
   const aiCollapsed = useUiStore((s) => s.aiCollapsed)
+  const centralMode = useUiStore((s) => s.centralMode)
   const sidebarWidth = useUiStore((s) => s.sidebarWidth)
   const aiWidth = useUiStore((s) => s.aiWidth)
   const setSidebarWidth = useUiStore((s) => s.setSidebarWidth)
@@ -56,6 +58,7 @@ export default function App(): React.JSX.Element {
 
   const works = useAppStore((s) => s.works)
   const loadWorks = useAppStore((s) => s.loadWorks)
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
   const charCount = useAppStore((s) => s.charCount)
   const todayChars = useAppStore((s) => s.todayChars)
   const dailyGoal = useAppStore((s) => s.dailyGoal)
@@ -277,7 +280,7 @@ export default function App(): React.JSX.Element {
             onDragEnd={() => void useUiStore.getState().persistPanelSizes()}
           />
         )}
-        {ready && works.length === 0 ? <WelcomeView /> : <EditorArea />}
+        {ready && works.length === 0 ? <WelcomeView /> : centralMode === 'outline' && currentWorkId ? <OutlineWorkspace /> : <EditorArea />}
         {!immersed && !aiCollapsed && (
           <ResizeHandle
             direction="right"

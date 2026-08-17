@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>续言 Continuum · GUI 高保真原型 v1.0</title>
+<style>
+/* ============================================================
+   续言 Continuum · GUI 高保真原型
+   基于《GUI设计优化与迭代策划方案》v1.0
+   四层 Design Tokens → 语义 → 组件 → 实现
+   ============================================================ */
+
+/* ---------- Primitive Tokens 原子层 ---------- */
+:root {
+  --brand-500: #2D7FF9;
+  --brand-300: #7AB1FF;
+  --brand-50:  #EBF3FF;
+  --neutral-0:   #FFFFFF;
+  --neutral-50:  #F7F8FA;
+  --neutral-100: #EEF1F5;
+  --neutral-200: #E2E6EC;
+  --neutral-300: #CBD2DC;
+  --neutral-500: #8A92A1;
+  --neutral-700: #4A5160;
+  --neutral-900: #1A1D24;
+  --success-500: #22C55E;
+  --warning-500:#F59E0B;
+  --danger-500:  #EF4444;
+
+  --font-ui:    Inter, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  --font-prose: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", "STSong", serif;
+  --font-mono:  "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+
+  --fs-xs: 11px; --fs-sm: 12px; --fs-base: 14px; --fs-lg: 16px; --fs-xl: 18px; --fs-2xl: 22px; --fs-3xl: 28px;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px; --radius-full: 9999px;
+  --shadow-1: 0 1px 2px rgba(16,24,40,.06);
+  --shadow-2: 0 4px 12px rgba(16,24,40,.10);
+  --shadow-3: 0 12px 32px rgba(16,24,40,.16);
+  --ease-standard: cubic-bezier(.4,0,.2,1);
+  --dur-fast: 120ms; --dur-base: 200ms; --dur-slow: 320ms;
+}
+
+/* ---------- Semantic Tokens 语义层（浅色） ---------- */
+:root,
+[data-theme="light"] {
+  --bg-canvas: var(--neutral-0);
+  --bg-surface: var(--neutral-50);
+  --bg-raised: var(--neutral-100);
+  --bg-hover: var(--neutral-100);
+  --bg-active: var(--neutral-200);
+  --bg-selected: var(--brand-50);
+  --text-primary: var(--neutral-900);
+  --text-secondary: var(--neutral-500);
+  --text-tertiary: var(--neutral-300);
+  --text-on-brand: #FFFFFF;
+  --border-default: var(--neutral-200);
+  --border-strong: var(--neutral-300);
+  --accent-default: var(--brand-500);
+  --accent-hover: var(--brand-300);
+  --focus-ring: rgba(45,127,249,.35);
+  --status-success: var(--success-500);
+  --status-warning: var(--warning-500);
+  --status-danger: var(--danger-500);
+  --overlay: rgba(26,29,36,.42);
+  --editor-bg: #FDFDFD;
+  --skeleton: var(--neutral-100);
+}
+
+/* ---------- Semantic Tokens 语义层（深色） ---------- */
+[data-theme="dark"] {
+  --brand-500: #4F8CFF; --brand-300: #7AB1FF; --brand-50: #1C2B47;
+  --neutral-0: #1A1D24; --neutral-50: #22262F; --neutral-100: #2B303B;
+  --neutral-200: #373D49; --neutral-300: #4A5260; --neutral-500: #9098A6;
+  --neutral-700: #B4BAC6; --neutral-900: #E6E8EC;
+  --bg-canvas: var(--neutral-0);
+  --bg-surface: var(--neutral-50);
+  --bg-raised: var(--neutral-100);
+  --bg-hover: #2E3440;
+  --bg-active: #38404E;
+  --bg-selected: var(--brand-50);
+  --text-primary: var(--neutral-900);
+  --text-secondary: var(--neutral-500);
+  --text-tertiary: var(--neutral-300);
+  --text-on-brand: #FFFFFF;
+  --border-default: var(--neutral-200);
+  --border-strong: var(--neutral-300);
+  --accent-default: var(--brand-500);
+  --accent-hover: var(--brand-300);
+  --focus-ring: rgba(79,140,255,.35);
+  --overlay: rgba(0,0,0,.55);
+  --editor-bg: #1D2129;
+  --skeleton: var(--neutral-100);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  overflow: hidden;
+  transition: background var(--dur-base) var(--ease-standard);
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: inherit; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================
+   应用框架
+   ============================================================ */
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ---------- 顶栏 ---------- */
+#topbar {
+  height: 42px; min-height: 42px;
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 0 var(--space-3);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  user-select: none;
+}
+.brand { display: flex; align-items: center; gap: 8px; padding-right: var(--space-3); }
+.brand-logo {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--brand-500), #5A9DFF);
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+.brand-name { font-weight: var(--fw-semibold); font-size: var(--fs-base); letter-spacing: .5px; }
+.brand-name em { font-style: normal; color: var(--text-secondary); font-weight: var(--fw-regular); }
+.top-menu { display: flex; align-items: center; gap: 2px; flex: 1; }
+.top-menu button {
+  padding: 5px 10px; font-size: var(--fs-sm); color: var(--text-primary);
+  border-radius: var(--radius-sm); transition: background var(--dur-fast);
+}
+.top-menu button:hover { background: var(--bg-hover); }
+.top-actions { display: flex; align-items: center; gap: 4px; }
+.icon-btn {
+  width: 30px; height: 30px; border-radius: var(--radius-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: all var(--dur-fast);
+  position: relative;
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.icon-btn.active { background: var(--bg-selected); color: var(--accent-default); }
+.icon-btn svg { width: 18px; height: 18px; }
+.badge {
+  position: absolute; top: 2px; right: 2px; min-width: 14px; height: 14px;
+  background: var(--status-danger); color: #fff; font-size: 10px; line-height: 14px;
+  text-align: center; border-radius: var(--radius-full); padding: 0 3px;
+}
+
+/* ---------- 面包屑行 ---------- */
+#crumb {
+  height: 34px; min-height: 34px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 var(--space-4);
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--fs-xs); color: var(--text-secondary);
+}
+#crumb .sep { color: var(--text-tertiary); }
+#crumb .path { display: flex; align-items: center; gap: 6px; flex: 1; overflow: hidden; white-space: nowrap; }
+#crumb .path b { color: var(--text-primary); font-weight: var(--fw-medium); }
+.crumb-right { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); }
+.save-state { display: inline-flex; align-items: center; gap: 5px; color: var(--status-success); }
+.save-state svg { width: 14px; height: 14px; }
+
+/* ---------- 主区域三栏 ---------- */
+#main { flex: 1; display: flex; min-height: 0; }
+
+/* ---------- 左侧内容管理 ---------- */
+#sidebar {
+  width: 280px; min-width: 280px;
+  display: flex; flex-direction: column;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  transition: width var(--dur-base) var(--ease-standard), min-width var(--dur-base);
+  overflow: hidden;
+}
+#sidebar.collapsed { width: 48px; min-width: 48px; }
+#sidebar.collapsed .sb-inner { display: none; }
+.sb-tabs {
+  display: flex; align-items: center; gap: 2px;
+  padding: var(--space-2) var(--space-2) 0;
+}
+.sb-tab {
+  flex: 1; height: 32px; font-size: var(--fs-sm);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: var(--text-secondary); position: relative;
+  transition: color var(--dur-fast), background var(--dur-fast);
+}
+.sb-tab svg { width: 15px; height: 15px; }
+.sb-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+.sb-tab.on { color: var(--accent-default); background: var(--bg-canvas); font-weight: var(--fw-medium); }
+.sb-tab.on::after {
+  content: ""; position: absolute; left: 12%; right: 12%; bottom: -1px; height: 2px;
+  background: var(--accent-default); border-radius: 2px 2px 0 0;
+}
+.sb-search { padding: var(--space-2); }
+.search-box {
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 10px;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-secondary);
+  transition: border-color var(--dur-fast);
+}
+.search-box:focus-within { border-color: var(--accent-default); box-shadow: 0 0 0 3px var(--focus-ring); }
+.search-box svg { width: 14px; height: 14px; flex-shrink: 0; }
+.search-box input { flex: 1; border: none; outline: none; background: transparent; color: var(--text-primary); font-size: var(--fs-sm); }
+.sb-body { flex: 1; overflow-y: auto; padding: 0 var(--space-1) var(--space-2); }
+.sb-pane { display: none; }
+.sb-pane.on { display: block; }
+
+/* 作品树 */
+.tree { list-style: none; font-size: var(--fs-sm); }
+.tree li { position: relative; }
+.tree .tw {
+  display: flex; align-items: center; gap: 6px; height: 28px;
+  padding: 0 8px 0 8px; border-radius: var(--radius-sm);
+  color: var(--text-primary); cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-fast);
+}
+.tree .tw:hover { background: var(--bg-hover); }
+.tree .tw.sel { background: var(--bg-selected); color: var(--accent-default); font-weight: var(--fw-medium); }
+.tree .tw .ic { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-secondary); }
+.tree .tw.sel .ic { color: var(--accent-default); }
+.tree .tw .chev { width: 12px; height: 12px; color: var(--text-tertiary); transition: transform var(--dur-base); flex-shrink: 0; }
+.tree .tw.closed .chev { transform: rotate(-90deg); }
+.tree .tw .meta { margin-left: auto; font-size: 10px; color: var(--text-tertiary); }
+.tree .children { list-style: none; margin-left: 14px; border-left: 1px solid var(--border-default); padding-left: 6px; }
+.tree .tw .tag {
+  font-size: 10px; color: var(--accent-default); background: var(--bg-selected);
+  border-radius: var(--radius-full); padding: 1px 6px;
+}
+/* 角色卡列表 */
+.card-list { display: flex; flex-direction: column; gap: 6px; padding: var(--space-1); }
+.role-card {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); cursor: pointer; transition: all var(--dur-fast);
+}
+.role-card:hover { border-color: var(--accent-default); box-shadow: var(--shadow-1); }
+.avatar {
+  width: 34px; height: 34px; border-radius: var(--radius-full); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-base); color: #fff; background: linear-gradient(135deg, var(--brand-500), #5A9DFF);
+}
+.avatar.a2 { background: linear-gradient(135deg,#8B5CF6,#C084FC); }
+.avatar.a3 { background: linear-gradient(135deg,#10B981,#34D399); }
+.role-info { flex: 1; min-width: 0; }
+.role-info .n { font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+.role-info .d { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 空状态 */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 24px 16px; text-align: center; color: var(--text-secondary);
+}
+.empty-state .eic {
+  width: 44px; height: 44px; border-radius: var(--radius-full);
+  background: var(--bg-selected); color: var(--accent-default);
+  display: flex; align-items: center; justify-content: center;
+}
+.empty-state .eic svg { width: 22px; height: 22px; }
+.empty-state .et { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text-primary); }
+.empty-state .ed { font-size: var(--fs-xs); max-width: 200px; }
+.ghost-btn {
+  font-size: var(--fs-sm); color: var(--accent-default); padding: 5px 12px;
+  border: 1px dashed var(--accent-default); border-radius: var(--radius-md);
+  transition: all var(--dur-fast);
+}
+.ghost-btn:hover { background: var(--bg-selected); }
+
+/* 侧栏折叠图标条 */
+.sb-rail {
+  display: none; flex-direction: column; align-items: center; gap: 4px; padding-top: var(--space-2);
+}
+#sidebar.collapsed .sb-rail { display: flex; }
+.rail-btn {
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center; color: var(--text-secondary);
+  transition: all var(--dur-fast);
+}
+.rail-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.rail-btn.on { background: var(--bg-selected); color: var(--accent-default); }
+.rail-btn svg { width: 18px; height: 18px; }
+
+/* ---------- 中央编辑区 ---------- */
+#center { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--editor-bg); }
+
+/* 格式工具栏 */
+#fmtbar {
+  height: 40px; min-height: 40px;
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 var(--space-3);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  user-select: none;
+  transition: opacity var(--dur-base);
+}
+.fb {
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: all var(--dur-fast);
+}
+.fb:hover { background: var(--bg-hover); color: var(--text-primary); }
+.fb.on { background: var(--bg-selected); color: var(--accent-default); }
+.fb svg { width: 15px; height: 15px; }
+.fb.lbl { width: auto; padding: 0 7px; font-size: var(--fs-sm); color: var(--text-secondary); gap: 3px; }
+.fb.lbl b { font-weight: var(--fw-semibold); }
+.divider { width: 1px; height: 18px; background: var(--border-default); margin: 0 6px; }
+.fmt-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.mode-switch { display: flex; background: var(--bg-raised); border-radius: var(--radius-md); padding: 2px; }
+.mode-btn {
+  height: 24px; padding: 0 10px; font-size: var(--fs-xs); border-radius: var(--radius-sm);
+  color: var(--text-secondary); transition: all var(--dur-fast);
+}
+.mode-btn.on { background: var(--bg-canvas); color: var(--text-primary); font-weight: var(--fw-medium); box-shadow: var(--shadow-1); }
+
+/* 编辑区主体 */
+#editarea { flex: 1; display: flex; min-height: 0; }
+.col { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+.col-head {
+  height: 26px; display: flex; align-items: center; gap: 8px;
+  padding: 0 var(--space-3); font-size: 11px; color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-default); background: var(--bg-surface);
+}
+.col-head b { color: var(--text-secondary); font-weight: var(--fw-medium); }
+.col-head .cbadge { margin-left: auto; font-size: 10px; color: var(--text-tertiary); }
+.split-handle { width: 1px; background: var(--border-default); cursor: col-resize; }
+
+/* 编辑器主体（衬线正文） */
+.editor {
+  flex: 1; overflow-y: auto; padding: var(--space-8) var(--space-8) 40vh;
+  font-family: var(--font-prose); font-size: 16px; line-height: 1.9; color: var(--text-primary);
+}
+.editor:focus { outline: none; }
+.editor .chap-title {
+  font-size: 22px; font-weight: var(--fw-bold); margin-bottom: 6px; line-height: 1.5;
+}
+.editor .chap-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; padding-bottom: 14px; border-bottom: 1px solid var(--border-default); }
+.editor h2 { font-size: 17px; font-weight: var(--fw-bold); margin: 20px 0 10px; }
+.editor p { margin: 0 0 14px; text-indent: 2em; }
+.editor .kbd-mark { color: var(--text-tertiary); font-size: 13px; }
+
+/* 预览列 */
+#preview-col { display: none; background: var(--editor-bg); }
+#app.editor-mode-preview #edit-col, #app.editor-mode-preview .split-handle { display: none; }
+#app.editor-mode-preview #preview-col { display: flex; }
+#app.editor-mode-split #preview-col { display: flex; }
+#app.editor-mode-split #edit-col { display: flex; }
+#app.editor-mode-edit #preview-col { display: none; }
+
+/* 预览渲染 */
+.preview {
+  flex: 1; overflow-y: auto; padding: var(--space-8) var(--space-8) 40vh;
+  font-family: var(--font-prose); font-size: 16px; line-height: 1.9;
+}
+.preview .chap-title { font-size: 22px; font-weight: var(--fw-bold); margin-bottom: 6px; line-height: 1.5; }
+.preview .chap-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; padding-bottom: 14px; border-bottom: 1px solid var(--border-default); }
+.preview h2 { font-size: 17px; font-weight: var(--fw-bold); margin: 20px 0 10px; }
+.preview p { margin: 0 0 14px; text-indent: 2em; }
+.preview blockquote { margin: 14px 0; padding: 8px 16px; border-left: 3px solid var(--accent-default); background: var(--bg-selected); color: var(--text-secondary); text-indent: 0; border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+.preview .dialogue { color: var(--neutral-700); }
+.preview .tag-pill { display:inline-block; font-size: 11px; background: var(--bg-raised); color: var(--text-secondary); border-radius: var(--radius-full); padding: 2px 8px; margin: 2px 4px 2px 0; }
+
+/* 续写预览（淡灰底） */
+.ghost-text { background: rgba(139,146,161,.18); border-radius: 4px; padding: 2px 4px; cursor: pointer; }
+.ghost-text::after { content: "⏎ Tab 接受 · Esc 取消"; font-size: 11px; color: var(--accent-default); margin-left: 8px; font-family: var(--font-ui); }
+
+/* ---------- 右侧 AI 面板 ---------- */
+#aipanel {
+  width: 340px; min-width: 340px; display: flex; flex-direction: column;
+  background: var(--bg-surface); border-left: 1px solid var(--border-default);
+  transition: width var(--dur-base), min-width var(--dur-base);
+  overflow: hidden;
+}
+#aipanel.collapsed { width: 48px; min-width: 48px; }
+#aipanel.collapsed .ai-inner { display: none; }
+.ai-tabs { display: flex; align-items: center; padding: var(--space-2) var(--space-2) 0; gap: 2px; }
+.ai-tab {
+  flex: 1; height: 30px; font-size: var(--fs-sm); border-radius: var(--radius-md) var(--radius-md) 0 0;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  color: var(--text-secondary); position: relative; transition: all var(--dur-fast);
+}
+.ai-tab svg { width: 14px; height: 14px; }
+.ai-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+.ai-tab.on { color: var(--accent-default); font-weight: var(--fw-medium); background: var(--bg-canvas); }
+.ai-tab.on::after { content:""; position: absolute; left: 20%; right: 20%; bottom: -1px; height: 2px; background: var(--accent-default); }
+.ai-config { display: flex; align-items: center; gap: 6px; padding: var(--space-2) var(--space-3); font-size: 11px; color: var(--text-secondary); border-bottom: 1px solid var(--border-default); }
+.ai-config select {
+  background: var(--bg-canvas); border: 1px solid var(--border-default); color: var(--text-primary);
+  border-radius: var(--radius-sm); font-size: 11px; padding: 2px 4px; outline: none;
+}
+.ai-config .spacer { flex: 1; }
+
+/* AI 对话区 */
+.chat { flex: 1; overflow-y: auto; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
+.msg { display: flex; gap: 8px; }
+.msg .mavatar {
+  width: 28px; height: 28px; border-radius: var(--radius-full); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff;
+}
+.msg.user { flex-direction: row-reverse; }
+.msg.user .mavatar { background: linear-gradient(135deg, #6B7280, #9CA3AF); }
+.msg.ai .mavatar { background: linear-gradient(135deg, var(--brand-500), #5A9DFF); }
+.bubble {
+  max-width: 82%; padding: 8px 12px; font-size: var(--fs-sm); line-height: 1.7;
+  border-radius: var(--radius-lg); word-break: break-word;
+}
+.msg.user .bubble { background: var(--accent-default); color: #fff; border-top-right-radius: 4px; }
+.msg.ai .bubble { background: var(--bg-canvas); border: 1px solid var(--border-default); border-top-left-radius: 4px; }
+.bubble .toolbar-row { display: flex; gap: 8px; margin-top: 8px; font-family: var(--font-ui); }
+.bubble .mini { font-size: 11px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; }
+.bubble .mini:hover { color: var(--accent-default); }
+.typing-dot { display: inline-flex; gap: 3px; padding: 4px 0; }
+.typing-dot i { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); animation: blink 1.2s infinite; }
+.typing-dot i:nth-child(2) { animation-delay: .2s; }
+.typing-dot i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,80%,100% { opacity: .25; } 40% { opacity: 1; } }
+
+/* AI 输入区 */
+.ai-input { border-top: 1px solid var(--border-default); padding: var(--space-3); display: flex; flex-direction: column; gap: 8px; }
+.ai-input .box {
+  display: flex; align-items: flex-end; gap: 8px;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg); padding: 6px 8px; transition: border-color var(--dur-fast);
+}
+.ai-input .box:focus-within { border-color: var(--accent-default); box-shadow: 0 0 0 3px var(--focus-ring); }
+.ai-input textarea {
+  flex: 1; border: none; outline: none; background: transparent; resize: none;
+  color: var(--text-primary); font-size: var(--fs-sm); line-height: 1.5; max-height: 96px;
+}
+.send-btn {
+  width: 30px; height: 30px; border-radius: var(--radius-full); flex-shrink: 0;
+  background: var(--accent-default); color: #fff; display: flex; align-items: center; justify-content: center;
+  transition: all var(--dur-fast);
+}
+.send-btn:hover { background: var(--brand-300); }
+.send-btn:disabled { background: var(--border-strong); cursor: default; }
+.send-btn svg { width: 15px; height: 15px; }
+.ai-hint { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-tertiary); }
+.ai-hint kbd { font-family: var(--font-ui); font-size: 10px; background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: 3px; padding: 0 4px; }
+
+/* 知识库检索结果 */
+.kb-card {
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; transition: all var(--dur-fast);
+}
+.kb-card:hover { border-color: var(--accent-default); box-shadow: var(--shadow-1); }
+.kb-card .kt { font-size: var(--fs-sm); font-weight: var(--fw-medium); margin-bottom: 4px; }
+.kb-card .kt .score { float: right; font-size: 10px; color: var(--status-success); font-family: var(--font-mono); }
+.kb-card .kd { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+.kb-card .kd mark { background: var(--bg-selected); color: var(--accent-default); border-radius: 2px; padding: 0 2px; }
+
+/* AI 面板折叠 rail */
+.ai-rail { display: none; flex-direction: column; align-items: center; gap: 4px; padding-top: var(--space-2); }
+#aipanel.collapsed .ai-rail { display: flex; }
+
+/* ---------- 底部状态栏 ---------- */
+#statusbar {
+  height: 30px; min-height: 30px;
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: 0 var(--space-3);
+  background: var(--bg-surface); border-top: 1px solid var(--border-default);
+  font-size: 11px; color: var(--text-secondary); user-select: none;
+}
+.stat-item { display: inline-flex; align-items: center; gap: 4px; }
+.stat-item b { color: var(--text-primary); font-weight: var(--fw-medium); }
+.stat-item svg { width: 13px; height: 13px; }
+.st-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-4); }
+.goal-progress { display: inline-flex; align-items: center; gap: 6px; }
+.goal-bar { width: 90px; height: 4px; background: var(--bg-raised); border-radius: var(--radius-full); overflow: hidden; }
+.goal-bar i { display: block; height: 100%; width: 60%; background: linear-gradient(90deg, var(--brand-500), var(--brand-300)); border-radius: var(--radius-full); }
+
+/* ============================================================
+   浮层：命令面板 / 通知中心 / 弹窗 / Toast / 微浮窗
+   ============================================================ */
+.overlay {
+  position: fixed; inset: 0; background: var(--overlay);
+  display: none; align-items: flex-start; justify-content: center;
+  z-index: 50; animation: fadeIn var(--dur-base) var(--ease-standard);
+}
+.overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 命令面板 */
+.palette {
+  margin-top: 12vh; width: 560px; max-width: 92vw;
+  background: var(--bg-canvas); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3); overflow: hidden;
+  animation: popIn var(--dur-base) var(--ease-standard);
+}
+@keyframes popIn { from { transform: translateY(-8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+.palette .pinput { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border-default); }
+.palette .pinput svg { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
+.palette .pinput input { flex: 1; border: none; outline: none; background: transparent; font-size: var(--fs-lg); color: var(--text-primary); }
+.palette .pinput kbd { font-size: 10px; color: var(--text-tertiary); background: var(--bg-raised); border-radius: 4px; padding: 2px 6px; border: 1px solid var(--border-default); font-family: var(--font-ui); }
+.palette .plist { max-height: 380px; overflow-y: auto; padding: 6px; }
+.cmd-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border-radius: var(--radius-md); cursor: pointer; font-size: var(--fs-sm);
+  color: var(--text-primary); transition: background var(--dur-fast);
+}
+.cmd-row:hover, .cmd-row.sel { background: var(--bg-selected); }
+.cmd-row .cic { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
+.cmd-row.sel .cic { color: var(--accent-default); }
+.cmd-row .cic svg { width: 16px; height: 16px; }
+.cmd-row .ckey { margin-left: auto; font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.cmd-row .group { font-size: 10px; color: var(--text-tertiary); background: var(--bg-raised); padding: 1px 6px; border-radius: var(--radius-full); }
+
+/* 通知中心 */
+.notify {
+  position: fixed; top: 50px; right: 12px; width: 340px;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-3); z-index: 60;
+  display: none; overflow: hidden; animation: popIn var(--dur-base);
+}
+.notify.show { display: block; }
+.notify .nh { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border-default); font-weight: var(--fw-medium); font-size: var(--fs-sm); }
+.notify .nh .spacer { flex: 1; }
+.notify .nh button { font-size: 11px; color: var(--text-secondary); }
+.notify .nlist { max-height: 380px; overflow-y: auto; }
+.nitem { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border-default); font-size: var(--fs-sm); }
+.nitem:last-child { border-bottom: none; }
+.nitem .nic { width: 26px; height: 26px; border-radius: var(--radius-full); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.nitem .nic svg { width: 14px; height: 14px; }
+.nitem.info .nic { background: var(--bg-selected); color: var(--accent-default); }
+.nitem.success .nic { background: rgba(34,197,94,.12); color: var(--status-success); }
+.nitem.warn .nic { background: rgba(245,158,11,.12); color: var(--status-warning); }
+.nitem.err .nic { background: rgba(239,68,68,.12); color: var(--status-danger); }
+.nitem .nt { font-weight: var(--fw-medium); color: var(--text-primary); }
+.nitem .nd { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+.nitem .na { margin-top: 6px; display: flex; gap: 10px; font-size: 11px; }
+.nitem .na button { color: var(--accent-default); }
+
+/* Toast */
+#toast-wrap { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-full); padding: 8px 16px;
+  box-shadow: var(--shadow-2); font-size: var(--fs-sm);
+  animation: slideDown var(--dur-base) var(--ease-standard);
+}
+.toast .tic { width: 16px; height: 16px; flex-shrink: 0; }
+.toast.success .tic { color: var(--status-success); }
+.toast.info .tic { color: var(--accent-default); }
+.toast.warn .tic { color: var(--status-warning); }
+.toast.err .tic { color: var(--status-danger); }
+@keyframes slideDown { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* 通用弹窗 */
+.modal {
+  position: fixed; inset: 0; background: var(--overlay); z-index: 55;
+  display: none; align-items: center; justify-content: center;
+}
+.modal.show { display: flex; animation: fadeIn var(--dur-base); }
+.dialog {
+  width: 480px; max-width: 92vw; max-height: 86vh; overflow-y: auto;
+  background: var(--bg-canvas); border-radius: var(--radius-lg); box-shadow: var(--shadow-3);
+  animation: popIn var(--dur-base) var(--ease-standard);
+}
+.dialog .dh { padding: 14px 20px; font-size: var(--fs-lg); font-weight: var(--fw-semibold); border-bottom: 1px solid var(--border-default); display: flex; align-items: center; }
+.dialog .dh .x { margin-left: auto; color: var(--text-secondary); width: 26px; height: 26px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
+.dialog .dh .x:hover { background: var(--bg-hover); }
+.dialog .db { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.dialog .df { display: flex; flex-direction: column; gap: 5px; }
+.dialog .df label { font-size: var(--fs-xs); color: var(--text-secondary); }
+.dialog .df input, .dialog .df select, .dialog .df textarea {
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); padding: 7px 10px; color: var(--text-primary); font-size: var(--fs-sm); outline: none;
+  transition: border-color var(--dur-fast);
+}
+.dialog .df input:focus, .dialog .df select:focus, .dialog .df textarea:focus { border-color: var(--accent-default); box-shadow: 0 0 0 3px var(--focus-ring); }
+.dialog .dfr { display: flex; gap: 10px; }
+.dialog .dfr > div { flex: 1; }
+.dialog .df-check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.dialog .df-check input { width: 15px; height: 15px; accent-color: var(--accent-default); }
+.dialog .da { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border-default); }
+.btn {
+  padding: 7px 16px; border-radius: var(--radius-md); font-size: var(--fs-sm);
+  border: 1px solid var(--border-default); background: var(--bg-canvas); color: var(--text-primary);
+  transition: all var(--dur-fast);
+}
+.btn:hover { background: var(--bg-hover); }
+.btn.primary { background: var(--accent-default); border-color: var(--accent-default); color: #fff; }
+.btn.primary:hover { background: var(--brand-300); }
+.btn.ghost { border-color: transparent; color: var(--text-secondary); }
+.btn.ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+.btn.danger { background: var(--status-danger); border-color: var(--status-danger); color: #fff; }
+
+/* 设置中心 */
+.settings { width: 720px; display: flex; }
+.settings .snav { width: 150px; border-right: 1px solid var(--border-default); padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+.settings .snav button { text-align: left; padding: 8px 12px; border-radius: var(--radius-md); font-size: var(--fs-sm); color: var(--text-secondary); }
+.settings .snav button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.settings .snav button.on { background: var(--bg-selected); color: var(--accent-default); font-weight: var(--fw-medium); }
+.settings .sbody { flex: 1; padding: 16px 20px; }
+.srow { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border-default); font-size: var(--fs-sm); }
+.srow:last-child { border-bottom: none; }
+.srow .st { color: var(--text-primary); }
+.srow .sd { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.srow select { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: 4px 8px; color: var(--text-primary); font-size: var(--fs-sm); }
+.switch { position: relative; width: 36px; height: 20px; background: var(--border-strong); border-radius: var(--radius-full); transition: background var(--dur-fast); }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left var(--dur-base); }
+.switch.on { background: var(--accent-default); }
+.switch.on::after { left: 18px; }
+
+/* AI 润色 Diff 微浮窗 */
+#diff-pop {
+  position: fixed; z-index: 45; width: 620px; max-width: 94vw;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-3);
+  display: none; overflow: hidden; animation: popIn var(--dur-base);
+}
+#diff-pop.show { display: block; }
+.diff-title { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: var(--fs-sm); font-weight: var(--fw-medium); border-bottom: 1px solid var(--border-default); }
+.diff-title .spark { color: var(--accent-default); }
+.diff-body { display: flex; padding: 12px 14px; gap: 10px; }
+.diff-col { flex: 1; font-size: var(--fs-sm); line-height: 1.7; }
+.diff-col .dlab { font-size: 10px; color: var(--text-tertiary); margin-bottom: 6px; }
+.diff-col.old { background: rgba(239,68,68,.05); border: 1px solid rgba(239,68,68,.18); border-radius: var(--radius-md); padding: 10px; }
+.diff-col.new { background: rgba(34,197,94,.05); border: 1px solid rgba(34,197,94,.22); border-radius: var(--radius-md); padding: 10px; }
+.diff-col.new ins { text-decoration: none; background: rgba(34,197,94,.18); border-radius: 2px; }
+.diff-actions { display: flex; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border-default); justify-content: flex-end; }
+
+/* 沉浸模式 */
+#app.immersed #topbar, #app.immersed #crumb, #app.immersed #fmtbar,
+#app.immersed #sidebar, #app.immersed #aipanel, #app.immersed #statusbar { display: none; }
+#app.immersed #editarea { font-size: 17px; }
+.immersed-tip {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-full); padding: 6px 16px; font-size: 11px;
+  color: var(--text-secondary); box-shadow: var(--shadow-2); display: none; z-index: 80;
+}
+#app.immersed .immersed-tip { display: flex; gap: 8px; align-items: center; }
+.immersed-tip kbd { font-family: var(--font-ui); background: var(--bg-raised); border-radius: 3px; padding: 0 5px; border: 1px solid var(--border-default); }
+
+/* 空状态欢迎卡（首页/无作品时） */
+#welcome { display: none; position: absolute; inset: 0; z-index: 5; background: var(--bg-canvas); align-items: center; justify-content: center; }
+#app.show-welcome #welcome { display: flex; }
+.welcome-inner { display: flex; gap: 40px; align-items: center; max-width: 860px; padding: 24px; }
+.welcome-art { width: 260px; flex-shrink: 0; }
+.welcome-art .art-card {
+  background: linear-gradient(160deg, var(--bg-selected), var(--bg-raised));
+  border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+  padding: 28px 20px; text-align: center;
+}
+.welcome-art .art-logo {
+  width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 14px;
+  background: linear-gradient(135deg, var(--brand-500), #5A9DFF);
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+.welcome-art h3 { font-family: var(--font-prose); font-size: 20px; margin-bottom: 8px; }
+.welcome-art p { font-size: 12px; color: var(--text-secondary); line-height: 1.7; }
+.welcome-cta { flex: 1; }
+.welcome-cta h2 { font-size: 24px; font-weight: var(--fw-bold); margin-bottom: 6px; font-family: var(--font-prose); }
+.welcome-cta .sub { color: var(--text-secondary); font-size: var(--fs-sm); margin-bottom: 20px; }
+.wcard {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  background: var(--bg-canvas); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); margin-bottom: 10px; cursor: pointer;
+  transition: all var(--dur-fast); width: 100%; text-align: left;
+}
+.wcard:hover { border-color: var(--accent-default); box-shadow: var(--shadow-1); transform: translateX(2px); }
+.wcard .wic { width: 38px; height: 38px; border-radius: var(--radius-lg); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.wcard .wic svg { width: 19px; height: 19px; }
+.wcard.primary .wic { background: var(--accent-default); color: #fff; }
+.wcard.alt .wic { background: var(--bg-raised); color: var(--text-secondary); }
+.wcard .wt { font-size: var(--fs-base); font-weight: var(--fw-medium); }
+.wcard .wd { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.wcard .warrow { margin-left: auto; color: var(--text-tertiary); }
+.wcard:hover .warrow { color: var(--accent-default); }
+.welcome-cta .wsug { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; }
+
+/* 快捷键速查 */
+.kb-overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 56; display: none; align-items: center; justify-content: center; }
+.kb-overlay.show { display: flex; }
+.kb-panel { width: 680px; max-height: 82vh; overflow-y: auto; background: var(--bg-canvas); border-radius: var(--radius-lg); box-shadow: var(--shadow-3); padding: 20px 24px; animation: popIn var(--dur-base); }
+.kb-panel h3 { margin-bottom: 4px; }
+.kb-panel .sub { color: var(--text-secondary); font-size: var(--fs-sm); margin-bottom: 16px; }
+.kb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 24px; }
+.kb-row { display: flex; justify-content: space-between; padding: 6px 8px; border-radius: var(--radius-sm); font-size: var(--fs-sm); }
+.kb-row:hover { background: var(--bg-hover); }
+.kb-row kbd { font-family: var(--font-ui); font-size: 11px; background: var(--bg-raised); border: 1px solid var(--border-default); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; color: var(--text-primary); }
+
+/* FTUE 引导 */
+.ftue {
+  position: fixed; inset: 0; z-index: 90; background: var(--overlay);
+  display: none; align-items: center; justify-content: center;
+}
+.ftue.show { display: flex; }
+.ftue-card { width: 460px; background: var(--bg-canvas); border-radius: var(--radius-lg); box-shadow: var(--shadow-3); padding: 26px; text-align: center; animation: popIn var(--dur-base); }
+.ftue-card .fstep { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.ftue-card .fstep i { width: 26px; height: 4px; border-radius: var(--radius-full); background: var(--border-default); }
+.ftue-card .fstep i.on { background: var(--accent-default); }
+.ftue-card .fic { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: var(--radius-full); background: var(--bg-selected); color: var(--accent-default); display: flex; align-items: center; justify-content: center; }
+.ftue-card .fic svg { width: 26px; height: 26px; }
+.ftue-card h3 { font-size: var(--fs-xl); margin-bottom: 8px; }
+.ftue-card p { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px; }
+
+/* 原型辅助工具条 */
+#proto-tools {
+  position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; padding: 6px; background: var(--bg-canvas);
+  border: 1px solid var(--border-default); border-radius: var(--radius-full);
+  box-shadow: var(--shadow-2); z-index: 40; font-size: 11px; align-items: center;
+}
+#proto-tools .label { padding: 0 8px; color: var(--text-tertiary); }
+#proto-tools button { padding: 4px 10px; border-radius: var(--radius-full); color: var(--text-secondary); font-size: 11px; }
+#proto-tools button:hover { background: var(--bg-hover); color: var(--text-primary); }
+#proto-tools button.demo { background: var(--bg-selected); color: var(--accent-default); font-weight: var(--fw-medium); }
+
+@media (max-width: 900px) {
+  #sidebar { width: 220px; min-width: 220px; }
+  #aipanel { width: 300px; min-width: 300px; }
+  .sb-tab span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== 应用框架 ==================== -->
+<div id="app" class="editor-mode-split">
+
+  <!-- 顶栏 -->
+  <header id="topbar">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.2 4.4-3 5.8V19h-8v-4.2C6.2 13.4 5 11.5 5 9a7 7 0 0 1 7-7z"/><path d="M9.5 22h5"/></svg>
+      </div>
+      <span class="brand-name">续言 <em>Continuum</em></span>
+    </div>
+    <nav class="top-menu">
+      <button>文件</button>
+      <button>编辑</button>
+      <button>视图</button>
+      <button>插入</button>
+      <button>AI</button>
+      <button>工具</button>
+      <button>设置</button>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnSearch" title="全局搜索 (Ctrl+Shift+F)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="icon-btn" id="btnTheme" title="切换主题 (Ctrl+Alt+T)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn" id="btnCommand" title="命令面板 (Ctrl+K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12z"/></svg>
+      </button>
+      <button class="icon-btn" id="btnBell" title="通知中心 (Ctrl+Shift+N)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="badge">3</span>
+      </button>
+      <button class="icon-btn" id="btnImmersive" title="沉浸模式 (F11)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+      <button class="icon-btn" id="btnHelp" title="帮助 (F1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 面包屑 -->
+  <div id="crumb">
+    <div class="path">
+      <span>我的书架</span><span class="sep">▸</span><span>玄幻 · 《雪山隐狐》</span><span class="sep">▸</span><span>第一卷：入世</span><span class="sep">▸</span><b>第 2 章 山中老道</b>
+    </div>
+    <div class="crumb-right">
+      <span class="save-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        已保存 14:32:05
+      </span>
+      <span>今日 +1,200 字</span>
+    </div>
+  </div>
+
+  <!-- 主区域 -->
+  <div id="main">
+
+    <!-- 左侧内容管理 -->
+    <aside id="sidebar">
+      <div class="sb-inner">
+        <div class="sb-tabs" id="sbTabs">
+          <button class="sb-tab on" data-pane="p-works">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>作品</span>
+          </button>
+          <button class="sb-tab" data-pane="p-outline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h4m0 0h14M7 6v0H3m4 0v0h0"/><path d="M3 12h4m0 0h14M7 12v0H3m4 0v0h0"/><path d="M3 18h4m0 0h14M7 18v0H3m4 0v0h0"/></svg>
+            <span>大纲</span>
+          </button>
+          <button class="sb-tab" data-pane="p-roles">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>角色</span>
+          </button>
+          <button class="sb-tab" data-pane="p-world">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
+            <span>设定</span>
+          </button>
+          <button class="sb-tab" data-pane="p-clues">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>
+            <span>伏笔</span>
+          </button>
+          <button class="sb-tab" data-pane="p-materials">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>素材</span>
+          </button>
+        </div>
+        <div class="sb-search">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="搜索作品 / 章节 / 大纲…" id="sbSearchInput">
+          </div>
+        </div>
+        <div class="sb-body">
+          <!-- 作品树 -->
+          <div class="sb-pane on" id="p-works">
+            <ul class="tree">
+              <li>
+                <div class="tw" data-toggle="w1"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>我的书架<span class="meta">3 部</span></div>
+                <ul class="children" id="w1">
+                  <li>
+                    <div class="tw" data-toggle="w1a"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6l2 3h12v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg></span>雪山隐狐<span class="tag">连载中</span><span class="meta">32.4 万字</span></div>
+                    <ul class="children" id="w1a">
+                      <li>
+                        <div class="tw" data-toggle="w1a1"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>第一卷：入世</div>
+                        <ul class="children" id="w1a1">
+                          <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 1 章 雪夜弃婴<span class="meta">2,180</span></div></li>
+                          <li><div class="tw sel"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 2 章 山中老道<span class="meta">2,341</span></div></li>
+                          <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 3 章 初遇灵狐<span class="meta">2,027</span></div></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <div class="tw" data-toggle="w1a2"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>第二卷：寻道</div>
+                        <ul class="children" id="w1a2">
+                          <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 4 章 踏雪而行<span class="meta">2,105</span></div></li>
+                          <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 5 章 道观夜话<span class="meta">1,988</span></div></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <div class="tw" data-toggle="w1b"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6l2 3h12v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg></span>雾都迷踪<span class="tag">存稿</span><span class="meta">6.1 万字</span></div>
+                    <ul class="children" id="w1b">
+                      <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 1 章 雨夜来电<span class="meta">1,650</span></div></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 大纲 -->
+          <div class="sb-pane" id="p-outline">
+            <ul class="tree">
+              <li><div class="tw" data-toggle="o1"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>全书大纲<span class="meta">8 卷 · 42 章</span></div>
+                <ul class="children" id="o1">
+                  <li><div class="tw" data-toggle="o2"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>第一卷：入世<span class="meta">3 章</span></div>
+                    <ul class="children" id="o2">
+                      <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 1 章 雪夜弃婴<span class="tag">伏笔</span></div></li>
+                      <li><div class="tw sel"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 2 章 山中老道<span class="tag">关键</span></div></li>
+                      <li><div class="tw"><span class="ic" style="width:12px"></span><span class="meta" style="margin:0;width:12px"></span>第 3 章 初遇灵狐</div></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 角色 -->
+          <div class="sb-pane" id="p-roles">
+            <div class="card-list">
+              <div class="role-card">
+                <div class="avatar">玄</div>
+                <div class="role-info"><div class="n">玄清</div><div class="d">隐世道人 · 白发赤足</div></div>
+                <svg style="width:14px;height:14px;color:var(--text-tertiary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div class="role-card">
+                <div class="avatar a2">雪</div>
+                <div class="role-info"><div class="n">白九</div><div class="d">雪山灵狐 · 女主</div></div>
+                <svg style="width:14px;height:14px;color:var(--text-tertiary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div class="role-card">
+                <div class="avatar a3">婴</div>
+                <div class="role-info"><div class="n">陆言</div><div class="d">雪夜弃婴 · 主角</div></div>
+                <svg style="width:14px;height:14px;color:var(--text-tertiary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+            </div>
+            <div class="empty-state" style="border-top:1px dashed var(--border-default);margin-top:8px;padding-top:16px">
+              <div class="ghost-btn">+ 新建角色卡</div>
+            </div>
+          </div>
+
+          <!-- 设定 -->
+          <div class="sb-pane" id="p-world">
+            <ul class="tree">
+              <li><div class="tw"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg></span>世界观：雪峰大陆<span class="meta">8 节点</span></div></li>
+              <li><div class="tw"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9z"/><path d="M12 3c1.5 2 2.5 4 2.5 6H9.5c0-2 1-4 2.5-6z"/></svg></span>势力：玄门十二宗<span class="meta">3 节点</span></div></li>
+              <li><div class="tw"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m8 21 4-9 4 9M6 3h12M9 7h6"/></svg></span>道具：寒玉髓 · 断刃</div></li>
+              <li><div class="tw"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-1.3-1.9L12 14l-3.7 1.9a2 2 0 0 0-1.3 1.9V22"/><path d="M12 2v8"/></svg></span>时间线：百年大事记</div></li>
+            </ul>
+          </div>
+
+          <!-- 伏笔 -->
+          <div class="sb-pane" id="p-clues">
+            <div class="card-list">
+              <div class="role-card" style="border-left:3px solid var(--status-warning)">
+                <div class="role-info"><div class="n">雪夜包裹的玉佩 <span style="font-size:10px;color:var(--status-warning);background:rgba(245,158,11,.12);border-radius:10px;padding:1px 6px">待回收</span></div><div class="d">埋设于第 1 章 · 已提及 3 次</div></div>
+                <svg style="width:14px;height:14px;color:var(--text-tertiary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div class="role-card" style="border-left:3px solid var(--accent-default)">
+                <div class="role-info"><div class="n">老道左手的旧伤 <span style="font-size:10px;color:var(--accent-default);background:var(--bg-selected);border-radius:10px;padding:1px 6px">进行中</span></div><div class="d">埋设于第 2 章 · 与主线关联</div></div>
+                <svg style="width:14px;height:14px;color:var(--text-tertiary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div class="role-card" style="border-left:3px solid var(--status-success)">
+                <div class="role-info"><div class="n">灵狐眉心一点朱砂 <span style="font-size:10px;color:var(--status-success);background:rgba(34,197,94,.12);border-radius:10px;padding:1px 6px">已回收</span></div><div class="d">第 3 章揭示 · 已闭环</div></div>
+                <svg style="width:14px;height:14px;color:var(--text-tertiary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- 素材 -->
+          <div class="sb-pane" id="p-materials">
+            <div class="empty-state">
+              <div class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+              <div class="et">素材库空空如也</div>
+              <div class="ed">拖拽图片 / 文档进来，或抓取剪贴板内容，写作时一键调用</div>
+              <div class="ghost-btn">+ 导入素材</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sb-rail" id="sbRail">
+        <button class="rail-btn on" data-rail="p-works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></button>
+        <button class="rail-btn" data-rail="p-outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+        <button class="rail-btn" data-rail="p-roles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg></button>
+        <button class="rail-btn" data-rail="p-world"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg></button>
+        <button class="rail-btn" data-rail="p-clues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg></button>
+        <button class="rail-btn" data-rail="p-materials"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+        <div style="flex:1"></div>
+        <button class="rail-btn" id="railExpand" title="展开侧栏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      </div>
+    </aside>
+
+    <!-- 中央编辑区 -->
+    <section id="center">
+      <div id="fmtbar">
+        <button class="fb" title="加粗 (Ctrl+B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/></svg></button>
+        <button class="fb" title="斜体 (Ctrl+I)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg></button>
+        <button class="fb" title="下划线 (Ctrl+U)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/></svg></button>
+        <div class="divider"></div>
+        <button class="fb lbl" title="标题 1"><b>H1</b></button>
+        <button class="fb lbl" title="标题 2"><b>H2</b></button>
+        <button class="fb lbl" title="标题 3"><b>H3</b></button>
+        <div class="divider"></div>
+        <button class="fb" title="引用"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3-1 5-4 5-8V5H3v8h4"/><path d="M15 21c3-1 5-4 5-8V5h-5v8h4"/></svg></button>
+        <button class="fb" title="无序列表"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+        <button class="fb" title="有序列表"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M4 6h1v4M4 10h2M4 12h3l-3 4h3"/></svg></button>
+        <button class="fb" title="任务列表"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="4" height="4" rx="1"/><rect x="3" y="15" width="4" height="4" rx="1"/><path d="m9 7 12 0M9 17h12"/></svg></button>
+        <button class="fb" title="表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg></button>
+        <button class="fb" title="链接"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button>
+        <button class="fb" title="图片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></button>
+        <button class="fb" title="代码块"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></button>
+        <div class="divider"></div>
+        <button class="fb" title="撤销"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+        <button class="fb" title="重做"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+        <div class="fmt-right">
+          <div class="mode-switch" id="modeSwitch">
+            <button class="mode-btn" data-mode="edit" title="仅编辑">编辑</button>
+            <button class="mode-btn on" data-mode="split" title="双栏同步">双栏</button>
+            <button class="mode-btn" data-mode="preview" title="仅预览">预览</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="editarea">
+        <div class="col" id="edit-col">
+          <div class="col-head"><span>编辑区</span><span class="cbadge">Markdown · UTF-8</span></div>
+          <div class="editor" id="editor" contenteditable="true" spellcheck="false">
+            <div class="chap-title">第 2 章 山中老道</div>
+            <div class="chap-sub">字数：2,341 · 本章目标 2,500 字 · 已更新 1 天前</div>
+            <h2>一、晨光</h2>
+            <p>雪停的时候，天边泛起一线鱼肚白。少年陆言裹着那件半旧的狐裘，蜷在道观残破的檐角下，指节被冻得发白。</p>
+            <p>老道玄清在院中扫雪，扫帚划过青石，发出沙沙的声响。他没有回头，却像是背后长了眼睛一般，忽然开口：「醒了？」</p>
+            <p class="dialogue">「嗯。」陆言应了一声，声音沙哑得像砂纸磨过铁皮。</p>
+            <p>玄清停下手里的动作，转过身来。他穿着灰扑扑的道袍，须发皆白，左手却一直笼在袖中，从不示人。</p>
+            <p><span class="kbd-mark">「昨夜你昏倒在雪地里，怀里抱着一块玉。」</span>玄清的目光落在少年颈间，「那玉上刻的字，你可认得？」</p>
+            <p>陆言下意识摸了摸胸口，指尖触到一片温润。那是他记事起便贴身带着的东西，上面的字迹他早已烂熟于心——</p>
+            <p>「「续」。」他说。</p>
+            <p>玄清闻言，握着扫帚的手微微一顿，半晌没有说话。院中积雪在晨光下泛着细碎的光，像洒了一地的碎银。</p>
+            <p class="ghost-text">「续……」老道低低念了一遍这个字，神色复杂，「你可知，上一个带着这块玉的人，五十年前，也是这样出现在我门前的。」</p>
+            <p class="kbd-mark">* 待续写——</p>
+          </div>
+        </div>
+        <div class="split-handle"></div>
+        <div class="col" id="preview-col">
+          <div class="col-head"><span>预览</span><span class="cbadge">GFM 实时渲染</span></div>
+          <div class="preview">
+            <div class="chap-title">第 2 章 山中老道</div>
+            <div class="chap-sub">字数：2,341 · 本章目标 2,500 字 · 已更新 1 天前</div>
+            <h2>一、晨光</h2>
+            <p>雪停的时候，天边泛起一线鱼肚白。少年陆言裹着那件半旧的狐裘，蜷在道观残破的檐角下，指节被冻得发白。</p>
+            <p>老道玄清在院中扫雪，扫帚划过青石，发出沙沙的声响。他没有回头，却像是背后长了眼睛一般，忽然开口：「醒了？」</p>
+            <p class="dialogue">「嗯。」陆言应了一声，声音沙哑得像砂纸磨过铁皮。</p>
+            <p>玄清停下手里的动作，转过身来。他穿着灰扑扑的道袍，须发皆白，左手却一直笼在袖中，从不示人。</p>
+            <blockquote>「昨夜你昏倒在雪地里，怀里抱着一块玉。」玄清的目光落在少年颈间，「那玉上刻的字，你可认得？」</blockquote>
+            <p>陆言下意识摸了摸胸口，指尖触到一片温润。那是他记事起便贴身带着的东西，上面的字迹他早已烂熟于心——</p>
+            <p class="dialogue">「续。」他说。</p>
+            <p>玄清闻言，握着扫帚的手微微一顿，半晌没有说话。院中积雪在晨光下泛着细碎的光，像洒了一地的碎银。</p>
+            <p>「续……」老道低低念了一遍这个字，神色复杂，「你可知，上一个带着这块玉的人，五十年前，也是这样出现在我门前的。」</p>
+            <span class="tag-pill">#玉佩</span><span class="tag-pill">#玄清</span><span class="tag-pill">#伏笔-老道旧伤</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧 AI 面板 -->
+    <aside id="aipanel">
+      <div class="ai-inner">
+        <div class="ai-tabs" id="aiTabs">
+          <button class="ai-tab on" data-pane="ai-chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.9 2.6L22.5 18l-2.6.9L19 21.5l-.9-2.6-2.6-.9 2.6-.9z"/></svg>
+            <span>对话</span>
+          </button>
+          <button class="ai-tab" data-pane="ai-polish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 14-14a2.1 2.1 0 0 1 3 3L6 20l-4 1z"/><path d="m15 5 4 4"/></svg>
+            <span>润色</span>
+          </button>
+          <button class="ai-tab" data-pane="ai-continue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg>
+            <span>续写</span>
+          </button>
+          <button class="ai-tab" data-pane="ai-kb">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="m8.5 11 .9.9 2-2.2"/></svg>
+            <span>知识库</span>
+          </button>
+        </div>
+        <div class="ai-config">
+          <span>模型</span>
+          <select id="modelSelect">
+            <option>DeepSeek-Chat</option>
+            <option>OpenAI GPT-4o-mini</option>
+            <option>硅基流动 Qwen-Plus</option>
+            <option>本地 Ollama</option>
+          </select>
+          <span class="spacer"></span>
+          <select title="注入上下文" style="max-width:120px">
+            <option>上下文：当前章节</option>
+            <option>上下文：角色卡</option>
+            <option>上下文：大纲</option>
+          </select>
+        </div>
+        <div class="sb-body" style="flex:1">
+          <!-- 对话 -->
+          <div class="sb-pane on" id="ai-chat">
+            <div class="chat">
+              <div class="msg ai">
+                <div class="mavatar"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+                <div class="bubble">你好，我是续言的写作助手。这一段描写对白很自然，但有两点可以提升：1）「神色复杂」稍显笼统，可改为具体动作；2）悬念句可以收得更短。需要我润色这一段吗？</div>
+              </div>
+              <div class="msg user">
+                <div class="mavatar">我</div>
+                <div class="bubble">帮我润色最后这段对话，让人物语气更冷峻</div>
+              </div>
+              <div class="msg ai">
+                <div class="mavatar"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+                <div class="bubble">
+                  「续。」老道把这两个字含在舌尖，慢慢碾过，像在尝一味陈年的药。<br><br>
+                  「五十年前，那个人也曾站在你站的位置，怀里抱着同一块玉。」他抬起笼在袖中的左手，指尖泛起一点青灰，「然后，他死在了雪崩里。」
+                  <div class="toolbar-row">
+                    <button class="mini" onclick="showDiffPop()">插入到光标</button>
+                    <button class="mini">复制</button>
+                    <button class="mini">朗读</button>
+                    <button class="mini">重新生成</button>
+                  </div>
+                </div>
+              </div>
+              <div class="msg ai">
+                <div class="mavatar"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+                <div class="bubble"><span class="typing-dot"><i></i><i></i><i></i></span></div>
+              </div>
+            </div>
+          </div>
+          <!-- 润色 -->
+          <div class="sb-pane" id="ai-polish">
+            <div class="chat">
+              <div class="kb-card">
+                <div class="kt">选区：第 2 章 · 「玄清闻言……碎银。」</div>
+                <div class="kd">已提取 186 字 · 检测到 3 处可优化点<br><span style="color:var(--text-tertiary)">建议：①「半晌没有说话」→ 删除冗余 ② 增加动作细节 ③ 结尾留白</span></div>
+              </div>
+              <div class="msg ai">
+                <div class="mavatar"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+                <div class="bubble">已为你生成润色稿，点击「查看 Diff」对比改动。<br><br><button class="btn primary" style="font-size:11px;padding:4px 12px" onclick="showDiffPop()">查看 Diff 对比</button></div>
+              </div>
+            </div>
+          </div>
+          <!-- 续写 -->
+          <div class="sb-pane" id="ai-continue">
+            <div class="chat">
+              <div class="kb-card">
+                <div class="kt">续写参数</div>
+                <div class="kd">起点：第 2 章结尾 · 风格：冷峻 · 长度：500 字<br>已注入上下文：当前章节 + 角色卡（玄清 / 陆言）</div>
+              </div>
+              <div class="msg ai">
+                <div class="mavatar"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+                <div class="bubble">续写结果已以「灰色预览」插入正文光标处。<br>按 <b>Tab</b> 接受 · <b>Esc</b> 取消 · <b>Shift+Tab</b> 替换选区。</div>
+              </div>
+            </div>
+          </div>
+          <!-- 知识库 -->
+          <div class="sb-pane" id="ai-kb">
+            <div class="chat">
+              <div class="search-box" style="background:var(--bg-canvas)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" placeholder="语义检索：查设定 / 找伏笔 / 理线索…">
+              </div>
+              <div class="kb-card">
+                <div class="kt">「玄清的左手」 <span class="score">92%</span></div>
+                <div class="kd">出处：<b>第 2 章 山中老道</b> · 正文第 7 段<br>「……左手却一直笼在袖中，从不示人。」<br><mark>关联线索</mark>：伏笔「老道左手的旧伤」（待回收）</div>
+              </div>
+              <div class="kb-card">
+                <div class="kt">「玉佩上的『续』字」 <span class="score">88%</span></div>
+                <div class="kd">出处：<b>第 1 章 雪夜弃婴</b> · 正文第 3 段<br><mark>关联</mark>：角色卡·陆言（主角） · 伏笔「雪夜玉佩」（待回收）</div>
+              </div>
+              <div class="kb-card">
+                <div class="kt">「五十年前的那人」 <span class="score">71%</span></div>
+                <div class="kd">出处：<b>第 2 章 山中老道</b>（本章新增）<br><mark>提示</mark>：与世界观「百年大事记」可能存在时间线冲突，建议核对</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ai-input">
+          <div class="box">
+            <textarea rows="2" placeholder="和 AI 助手对话，或选中正文后 Ctrl+R 润色…"></textarea>
+            <button class="send-btn" title="发送 (Enter)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+            </button>
+          </div>
+          <div class="ai-hint"><span>Enter 发送 · Shift+Enter 换行</span><span><kbd>Ctrl+R</kbd> 选区润色 <kbd>Ctrl+J</kbd> 改写</span></div>
+        </div>
+      </div>
+      <div class="ai-rail" id="aiRail">
+        <button class="rail-btn on" data-rail="ai-chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></button>
+        <button class="rail-btn" data-rail="ai-polish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 14-14a2.1 2.1 0 0 1 3 3L6 20l-4 1z"/></svg></button>
+        <button class="rail-btn" data-rail="ai-continue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg></button>
+        <button class="rail-btn" data-rail="ai-kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+        <div style="flex:1"></div>
+        <button class="rail-btn" id="aiExpand" title="展开 AI 面板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 底部状态栏 -->
+  <footer id="statusbar">
+    <span class="stat-item">字数 <b>2,341</b> / 字符 <b>2,890</b></span>
+    <span class="stat-item">今日 <b style="color:var(--status-success)">+1,200</b></span>
+    <span class="goal-progress">目标 2,500<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg>
+      <span class="goal-bar"><i></i></span>94%</span>
+    <span class="stat-item">模型 <b>DeepSeek-Chat</b></span>
+    <span class="st-right">
+      <span class="stat-item">自动保存 <b>14:32:05</b></span>
+      <span class="stat-item">UTF-8</span>
+      <span class="stat-item">MD · GFM</span>
+      <span class="stat-item" style="color:var(--text-tertiary)">v1.0 · 数据本地</span>
+    </span>
+  </footer>
+
+  <div class="immersed-tip"><span>沉浸模式</span><span><kbd>F11</kbd> 退出</span><span>·</span><span><kbd>F2</kbd> 强制码字</span></div>
+</div>
+
+<!-- ==================== 欢迎空状态（演示） ==================== -->
+<div id="welcome">
+  <div class="welcome-inner">
+    <div class="welcome-art">
+      <div class="art-card">
+        <div class="art-logo">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.2 4.4-3 5.8V19h-8v-4.2C6.2 13.4 5 11.5 5 9a7 7 0 0 1 7-7z"/><path d="M9.5 22h5"/></svg>
+        </div>
+        <h3>让故事接续、延续下去</h3>
+        <p>数据本地 · 模型自选 · 开源免费<br>你的创作，永远属于你自己</p>
+      </div>
+    </div>
+    <div class="welcome-cta">
+      <h2>欢迎来到续言</h2>
+      <p class="sub">面向中文网文作者的开源写作助手 —— 从大纲到完本，从卡文到破局。</p>
+      <button class="wcard primary" onclick="closeWelcome();toast('success','作品《雪山隐狐》已创建');showNewWorkWizard()">
+        <div class="wic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div><div class="wt">创建新作品</div><div class="wd">填写题材、类型与目标字数，一键开卷</div></div>
+        <div class="warrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></div>
+      </button>
+      <button class="wcard alt" onclick="closeWelcome();toast('info','已打开文件导入向导')">
+        <div class="wic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+        <div><div class="wt">导入 Markdown / TXT</div><div class="wd">从已有稿件迁移，批量导入章节</div></div>
+        <div class="warrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></div>
+      </button>
+      <button class="wcard alt" onclick="closeWelcome();toast('info','已载入示例作品《雪山隐狐》')">
+        <div class="wic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6l2 3h12v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg></div>
+        <div><div class="wt">浏览示例《雪山隐狐》</div><div class="wd">体验大纲 · 角色 · 伏笔 · AI 完整工作流</div></div>
+        <div class="warrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></div>
+      </button>
+      <p class="wsug">数据仅存储在本地 · 所有 AI 调用走你的 API Key · 无需注册</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 浮层 ==================== -->
+
+<!-- 命令面板 -->
+<div class="overlay" id="paletteOverlay">
+  <div class="palette">
+    <div class="pinput">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="paletteInput" placeholder="输入命令或搜索…" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="plist">
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></span>AI · 润色选区<span class="ckey">Ctrl+R</span></div>
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg></span>AI · 续写当前段<span class="ckey">Ctrl+Enter</span></div>
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>全局搜索<span class="ckey">Ctrl+Shift+F</span></div>
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h12"/></svg></span>跳转章节 …<span class="ckey">Ctrl+P</span></div>
+      <div class="cmd-row sel"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></svg></span>切换主题<span class="ckey">Ctrl+Alt+T</span></div>
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>大纲视图<span class="group">最近</span></div>
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span>打开设置<span class="ckey">Ctrl+,</span></div>
+      <div class="cmd-row"><span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6l2 3h12v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg></span>导出章节<span class="ckey">Ctrl+Shift+E</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 通知中心 -->
+<div class="notify" id="notifyPanel">
+  <div class="nh">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    通知中心
+    <span class="spacer"></span>
+    <button id="notifyClose">全部清除</button>
+  </div>
+  <div class="nlist">
+    <div class="nitem success">
+      <div class="nic success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <div><div class="nt">章节已保存</div><div class="nd">第 2 章 山中老道 · 已生成版本 v4</div><div class="na"><button>查看版本</button><button>撤销</button></div></div>
+    </div>
+    <div class="nitem info">
+      <div class="nic info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+      <div><div class="nt">AI 续写完成</div><div class="nd">已生成 478 字，以预览形式插入光标处（Tab 接受）</div><div class="na"><button>跳转光标</button><button>忽略</button></div></div>
+    </div>
+    <div class="nitem warn">
+      <div class="nic warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+      <div><div class="nt">今日目标即将达成</div><div class="nd">已写 1,200 / 1,500 字，还差 300 字完成今日码字目标</div></div>
+    </div>
+    <div class="nitem err">
+      <div class="nic err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg></div>
+      <div><div class="nt">知识库索引过期</div><div class="nd">检测到第 2 章内容已更新，需要重建索引（约 3 秒）</div><div class="na"><button>立即重建</button><button>复制详情</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-wrap"></div>
+
+<!-- 新建作品向导 -->
+<div class="modal" id="workModal">
+  <div class="dialog">
+    <div class="dh">新建作品<span><button class="x" onclick="hide('#workModal')">✕</button></span></div>
+    <div class="db">
+      <div class="df"><label>作品名 *</label><input placeholder="例如：雪山隐狐"></div>
+      <div class="df"><label>副标题（可选）</label><input placeholder="一句话钩子，如：雪夜弃婴，十年后惊动天下"></div>
+      <div class="dfr">
+        <div class="df"><label>题材</label><select><option>玄幻</option><option>都市</option><option>科幻</option><option>历史</option><option>悬疑</option></select></div>
+        <div class="df"><label>篇幅</label><select><option>长篇（100 万字+）</option><option>中篇（30-100 万字）</option><option>短篇</option></select></div>
+        <div class="df"><label>目标字数</label><input placeholder="如 200（万字）"></div>
+      </div>
+      <div class="df"><label>简介</label><textarea rows="3" placeholder="一句话简介或卖点（可选）"></textarea></div>
+      <div class="df"><label>默认卷名</label><select><option>第一卷</option><option>序卷 · 引子</option></select></div>
+      <label class="df-check"><input type="checkbox" checked> 创建后立即新建第一章</label>
+    </div>
+    <div class="da">
+      <button class="btn ghost" onclick="hide('#workModal')">取消</button>
+      <button class="btn primary" onclick="hide('#workModal');toast('success','作品创建成功，已进入第一章编辑')">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 格式设置 -->
+<div class="modal" id="fmtModal">
+  <div class="dialog" style="width:540px">
+    <div class="dh">格式设置<span><button class="x" onclick="hide('#fmtModal')">✕</button></span></div>
+    <div class="db">
+      <div class="df">
+        <label>主题</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="setTheme('light')">浅色</button>
+          <button class="btn" onclick="setTheme('dark')">深色</button>
+          <button class="btn" style="background:var(--bg-surface);color:var(--text-secondary)">护眼浅</button>
+          <button class="btn" style="background:var(--bg-surface);color:var(--text-secondary)">护眼深</button>
+          <button class="btn" style="background:var(--bg-surface);color:var(--text-secondary)">高对比</button>
+        </div>
+      </div>
+      <div class="dfr">
+        <div class="df"><label>正文字体</label><select><option>思源宋体（推荐）</option><option>系统宋体</option><option>楷体</option><option>等线（无衬线）</option></select></div>
+        <div class="df"><label>字号</label><select><option>12</option><option>14</option><option selected>16（推荐）</option><option>18</option><option>20</option><option>24</option></select></div>
+        <div class="df"><label>行距</label><select><option>1.3</option><option selected>1.5</option><option>1.8</option><option>2.0</option></select></div>
+      </div>
+      <div class="dfr">
+        <div class="df"><label>段落首行缩进</label><select><option selected>2 字符</option><option>1 字符</option><option>无</option></select></div>
+        <div class="df"><label>自动保存</label><select><option>15 秒</option><option selected>30 秒</option><option>60 秒</option></select></div>
+      </div>
+      <label class="df-check"><input type="checkbox" checked> 打字机模式（光标居中）</label>
+      <label class="df-check"><input type="checkbox"> 显示行号</label>
+      <label class="df-check"><input type="checkbox" checked> 显示 Markdown 标记</label>
+      <label class="df-check"><input type="checkbox" checked> 大纲自动从标题提取</label>
+    </div>
+    <div class="da">
+      <button class="btn ghost">恢复默认</button>
+      <button class="btn primary" onclick="hide('#fmtModal');toast('success','格式设置已生效')">应用</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置中心 -->
+<div class="modal" id="settingsModal">
+  <div class="dialog settings">
+    <div class="snav">
+      <button class="on">通用</button>
+      <button>外观</button>
+      <button>编辑器</button>
+      <button>AI</button>
+      <button>热键</button>
+      <button>数据</button>
+      <button>高级</button>
+    </div>
+    <div class="sbody">
+      <div class="srow"><div><div class="st">语言</div><div class="sd">界面显示语言</div></div><select><option>简体中文</option><option>繁體中文</option><option>English</option></select></div>
+      <div class="srow"><div><div class="st">自动检查更新</div><div class="sd">启动时检查 GitHub Releases</div></div><div class="switch on"></div></div>
+      <div class="srow"><div><div class="st">开机启动</div></div><div class="switch"></div></div>
+      <div class="srow"><div><div class="st">数据存储位置</div><div class="sd">C:\Users\you\Documents\续言</div></div><button class="btn" style="padding:4px 10px">更改…</button></div>
+      <div class="srow"><div><div class="st">实时字数统计</div></div><div class="switch on"></div></div>
+      <div class="srow"><div><div class="st">隐私模式（不写入历史）</div></div><div class="switch"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI 润色 Diff 微浮窗 -->
+<div id="diff-pop">
+  <div class="diff-title">
+    <svg class="spark" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+    AI 润色 · Diff 对比（186 字 → 172 字，-14 字）
+    <button class="x" style="margin-left:auto;color:var(--text-secondary)" onclick="hide('#diff-pop')">✕</button>
+  </div>
+  <div class="diff-body">
+    <div class="diff-col old">
+      <div class="dlab">原文</div>
+      玄清闻言，握着扫帚的手微微一顿，<span style="color:var(--status-danger);text-decoration:line-through">半晌没有说话。</span>院中积雪在晨光下泛着细碎的光，像洒了一地的碎银。
+    </div>
+    <div class="diff-col new">
+      <div class="dlab">润色后</div>
+      玄清闻言，握着扫帚的手微微一顿<ins>，指节收紧又缓缓松开。</ins>院中积雪在晨光下泛着细碎的光，像洒了一地的碎银。
+    </div>
+  </div>
+  <div class="diff-actions">
+    <button class="btn ghost" onclick="hide('#diff-pop')">取消</button>
+    <button class="btn" onclick="hide('#diff-pop')">仅替换选中</button>
+    <button class="btn primary" onclick="hide('#diff-pop');toast('success','润色结果已应用到正文')">全部替换</button>
+  </div>
+</div>
+
+<!-- 快捷键速查 -->
+<div class="kb-overlay" id="kbOverlay">
+  <div class="kb-panel">
+    <h3>快捷键速查</h3>
+    <p class="sub">按 <b>Ctrl+/</b> 随时召唤 · 在「设置 → 热键」中可自定义全部快捷键</p>
+    <div class="kb-grid" id="kbGrid"></div>
+  </div>
+</div>
+
+<!-- FTUE 引导 -->
+<div class="ftue" id="ftue">
+  <div class="ftue-card">
+    <div class="fstep"><i class="on"></i><i></i><i></i></div>
+    <div class="fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+    <h3>创建你的第一本书</h3>
+    <p>在左侧「作品」面板点击新建，填写题材、类型与目标字数。续言会为你生成作品结构，并自动建好第一卷。</p>
+    <button class="btn primary" onclick="nextFtue()">下一步</button>
+  </div>
+</div>
+
+<!-- 原型辅助工具条 -->
+<div id="proto-tools">
+  <span class="label">原型演示</span>
+  <button onclick="showWelcome()">① 空状态</button>
+  <button onclick="showNewWorkWizard()">② 新建向导</button>
+  <button onclick="show('#fmtModal')">③ 格式设置</button>
+  <button onclick="show('#settingsModal')">④ 设置中心</button>
+  <button onclick="showDiffPop()">⑤ AI Diff</button>
+  <button onclick="showFtue()">⑥ 引导 FTUE</button>
+  <button class="demo" onclick="showKb()">快捷键 Ctrl+/</button>
+  <span class="label">| 主题</span>
+  <button onclick="setTheme('light')">浅色</button>
+  <button onclick="setTheme('dark')">深色</button>
+</div>
+
+<script>
+/* ==================== 工具 ==================== */
+const $ = s => document.querySelector(s);
+const show = s => { const el = document.querySelector(s); if (el) el.classList.add('show'); };
+const hide = s => { const el = document.querySelector(s); if (el) el.classList.remove('show'); };
+
+/* ==================== Toast ==================== */
+const ICONS = {
+  success: '<svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  info: '<svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+  warn: '<svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  err: '<svg class="tic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>'
+};
+function toast(type, msg, ms = 2600) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = ICONS[type] + '<span>' + msg + '</span>';
+  $('#toast-wrap').appendChild(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 320); }, ms);
+}
+
+/* ==================== 主题 ==================== */
+function setTheme(name) {
+  const app = $('#app');
+  app.setAttribute('data-theme', name);
+  document.documentElement.setAttribute('data-theme', name === 'dark' ? 'dark' : 'light');
+}
+
+/* ==================== 顶栏 ==================== */
+$('#btnTheme').onclick = () => {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setTheme(dark ? 'light' : 'dark');
+  toast('info', dark ? '已切换至浅色主题' : '已切换至深色主题');
+};
+$('#btnCommand').onclick = () => { show('#paletteOverlay'); setTimeout(() => $('#paletteInput').focus(), 60); };
+$('#btnBell').onclick = () => $('#notifyPanel').classList.toggle('show');
+$('#notifyClose').onclick = () => { $('#notifyPanel').classList.remove('show'); toast('info', '通知已全部清除'); };
+$('#btnHelp').onclick = () => showKb();
+$('#btnImmersive').onclick = toggleImmersive;
+$('#btnSearch').onclick = () => toast('info', '全局搜索面板（Ctrl+Shift+F）');
+
+function toggleImmersive() {
+  const app = $('#app');
+  app.classList.toggle('immersed');
+  toast('info', app.classList.contains('immersed') ? '已进入沉浸模式，F11 退出' : '已退出沉浸模式');
+}
+
+/* ==================== 侧栏 Tab ==================== */
+function bindPaneTabs(containerId, panePrefix) {
+  const tabs = document.querySelectorAll('#' + containerId + ' .sb-tab, #' + containerId + ' .ai-tab');
+  tabs.forEach(tab => {
+    tab.onclick = () => {
+      const pane = tab.getAttribute('data-pane');
+      document.querySelectorAll('#' + containerId + ' .sb-tab, #' + containerId + ' .ai-tab').forEach(t => t.classList.remove('on'));
+      tab.classList.add('on');
+      document.querySelectorAll('.' + panePrefix + '-pane, [id^="' + panePrefix + '"]').forEach(p => {
+        if (p.id === pane) p.classList.add('on'); else if (p.classList.contains('sb-pane')) p.classList.remove('on');
+      });
+    };
+  });
+}
+
+/* 侧栏 Tab（含 rail 联动） */
+function bindSidebarTabs() {
+  document.querySelectorAll('#sbTabs .sb-tab, #sbRail .rail-btn').forEach(btn => {
+    btn.onclick = () => {
+      const pane = btn.getAttribute('data-pane');
+      document.querySelectorAll('#sbTabs .sb-tab, #sbRail .rail-btn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      document.querySelectorAll('#sidebar .sb-pane').forEach(p => p.classList.toggle('on', p.id === pane));
+    };
+  });
+}
+function bindAiTabs() {
+  document.querySelectorAll('#aiTabs .ai-tab, #aiRail .rail-btn').forEach(btn => {
+    btn.onclick = () => {
+      const pane = btn.getAttribute('data-pane');
+      document.querySelectorAll('#aiTabs .ai-tab, #aiRail .rail-btn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      document.querySelectorAll('#aipanel .sb-pane').forEach(p => p.classList.toggle('on', p.id === pane));
+    };
+  });
+}
+bindSidebarTabs(); bindAiTabs();
+
+/* 折叠 */
+$('#railExpand').onclick = () => { $('#sidebar').classList.remove('collapsed'); toast('info', '侧栏已展开'); };
+$('#aiExpand').onclick = () => { $('#aipanel').classList.remove('collapsed'); toast('info', 'AI 面板已展开'); };
+/* 双击侧栏/面板标题也可折叠 */
+$('#sidebar .sb-tabs').ondblclick = () => $('#sidebar').classList.add('collapsed');
+$('#aipanel .ai-tabs').ondblclick = () => $('#aipanel').classList.add('collapsed');
+
+/* 树折叠 */
+document.querySelectorAll('.tree .tw[data-toggle]').forEach(tw => {
+  tw.onclick = () => {
+    const id = tw.getAttribute('data-toggle');
+    const ul = document.getElementById(id);
+    if (!ul) return;
+    ul.style.display = ul.style.display === 'none' ? '' : 'none';
+    tw.classList.toggle('closed');
+  };
+});
+
+/* ==================== 编辑器模式 ==================== */
+document.querySelectorAll('#modeSwitch .mode-btn').forEach(b => {
+  b.onclick = () => {
+    const m = b.getAttribute('data-mode');
+    const app = $('#app');
+    app.className = app.className.replace(/editor-mode-\w+/, '') + ' editor-mode-' + m;
+    document.querySelectorAll('#modeSwitch .mode-btn').forEach(x => x.classList.toggle('on', x === b));
+    toast('info', {edit:'已切换为仅编辑模式', split:'已切换为双栏模式', preview:'已切换为仅预览模式'}[m]);
+  };
+});
+
+/* ==================== 浮层关闭 ==================== */
+$('#paletteOverlay').onclick = e => { if (e.target === $('#paletteOverlay')) hide('#paletteOverlay'); };
+document.querySelectorAll('.modal').forEach(m => m.onclick = e => { if (e.target === m) m.classList.remove('show'); });
+$('#kbOverlay').onclick = e => { if (e.target === $('#kbOverlay')) $('#kbOverlay').classList.remove('show'); };
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    hide('#paletteOverlay'); hide('#diff-pop'); $('#notifyPanel').classList.remove('show');
+    document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+    $('#kbOverlay').classList.remove('show'); hide('#ftue');
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#btnCommand').click(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); showKb(); }
+  if (e.key === 'F11') { e.preventDefault(); toggleImmersive(); }
+});
+
+/* ==================== 命令面板过滤 ==================== */
+$('#paletteInput').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#paletteOverlay .cmd-row').forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+$('#paletteInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { hide('#paletteOverlay'); toast('success', '已执行命令'); }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const rows = [...document.querySelectorAll('#paletteOverlay .cmd-row')].filter(r => r.style.display !== 'none');
+    const idx = rows.findIndex(r => r.classList.contains('sel'));
+    rows.forEach(r => r.classList.remove('sel'));
+    if (idx > -1 && rows[idx + 1]) rows[idx + 1].classList.add('sel'); else if (rows[0]) rows[0].classList.add('sel');
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const rows = [...document.querySelectorAll('#paletteOverlay .cmd-row')].filter(r => r.style.display !== 'none');
+    const idx = rows.findIndex(r => r.classList.contains('sel'));
+    rows.forEach(r => r.classList.remove('sel'));
+    if (idx > 0 && rows[idx - 1]) rows[idx - 1].classList.add('sel'); else if (rows[rows.length - 1]) rows[rows.length - 1].classList.add('sel');
+  }
+});
+
+/* ==================== 欢迎 / 向导 / FTUE ==================== */
+function showWelcome() { $('#app').classList.add('show-welcome'); }
+function closeWelcome() { $('#app').classList.remove('show-welcome'); }
+function showNewWorkWizard() { show('#workModal'); }
+function showFtue() { show('#ftue'); }
+function nextFtue() { hide('#ftue'); toast('info', 'FTUE 第 1/3 步完成，可继续引导'); }
+function showKb() {
+  const defs = [
+    ['Ctrl+S', '保存当前章节'], ['Ctrl+N', '新建作品'], ['Ctrl+Shift+N', '新建章节'], ['Ctrl+Shift+E', '导出'],
+    ['Ctrl+Shift+A', 'AI 面板'], ['Ctrl+R', '润色选区'], ['Ctrl+J', '改写选区'], ['Ctrl+Enter', '续写'],
+    ['Ctrl+Shift+K', '知识库检索'], ['Ctrl+Shift+F', '全局搜索'], ['Ctrl+K', '命令面板'], ['Ctrl+P', '跳转章节'],
+    ['F11', '沉浸模式'], ['Ctrl+Alt+T', '循环主题'], ['Ctrl+Alt+L', '行号'], ['Ctrl+= / Ctrl+-', '字号缩放'],
+    ['Ctrl+1~6', '标题 1-6'], ['Ctrl+B/I/U', '加粗 / 斜体 / 下划线'], ['Ctrl+Shift+8', '无序列表'], ['Ctrl+Shift+7', '有序列表'],
+    ['Ctrl+Shift+.', '引用'], ['Ctrl+Shift+9', '任务列表'], ['Ctrl+Z / Ctrl+Y', '撤销 / 重做'], ['Ctrl+/', '速查卡']
+  ];
+  $('#kbGrid').innerHTML = defs.map(([k, d]) => '<div class="kb-row"><span>' + d + '</span><kbd>' + k + '</kbd></div>').join('');
+  $('#kbOverlay').classList.add('show');
+}
+
+/* ==================== Diff 微浮窗 ==================== */
+function showDiffPop() {
+  const pop = $('#diff-pop');
+  pop.classList.add('show');
+  const edit = $('#editarea');
+  const r = edit.getBoundingClientRect();
+  pop.style.left = Math.max(12, r.left + r.width / 2 - 310) + 'px';
+  pop.style.top = (r.top + 120) + 'px';
+}
+
+/* ==================== 侧栏搜索 ==================== */
+$('#sbSearchInput').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) return;
+  toast('info', '搜索「' + e.target.value + '」：命中 3 条（章节 / 大纲 / 角色）');
+});
+
+/* 初始化：模式状态 */
+$('#app').classList.add('editor-mode-split');
+</script>
+</body>
+</html>

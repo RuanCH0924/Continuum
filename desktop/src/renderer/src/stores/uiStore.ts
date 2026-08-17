@@ -3,7 +3,7 @@ import { create } from 'zustand'
 export type ThemeId = 'light' | 'dark' | 'sepia' | 'sepia-dark' | 'high-contrast'
 
 /** AI 面板 Tab（提升到全局以便快捷键驱动）。 */
-export type AiTabId = 'chat' | 'polish' | 'continue' | 'kb'
+export type AiTabId = 'chat' | 'polish' | 'continue' | 'kb' | 'extract'
 
 /** 侧栏 Tab（提升到全局，供编辑器伏笔标记/时间线标注跳转控制）。 */
 export type SidebarTabKey = 'works' | 'outline' | 'roles' | 'world' | 'clues' | 'materials' | 'timeline'
@@ -51,6 +51,12 @@ interface UiState {
   clueFocus: { noteId: string; ts: number } | null
   /** 时间线条目聚焦信号（正文时间标注点击后定位条目） */
   timelineFocus: { entryId: string; ts: number } | null
+  /** 中央区域模式：写作（编辑器）/ 大纲（大纲工作台） */
+  centralMode: 'editor' | 'outline'
+  /** 大纲节点聚焦信号（侧栏/工作台导航点击后定位高亮） */
+  outlineFocus: { nodeId: string; ts: number } | null
+  /** 大纲工作台当前视图（提取完成跳转等场景可直达章纲） */
+  outlineView: 'list' | 'chapters' | 'mindmap'
   /** FTUE 首次启动引导是否已展示 */
   ftueDone: boolean
 
@@ -79,6 +85,9 @@ interface UiState {
   setSidebarTab: (t: SidebarTabKey) => void
   setClueFocus: (v: { noteId: string; ts: number } | null) => void
   setTimelineFocus: (v: { entryId: string; ts: number } | null) => void
+  setCentralMode: (v: 'editor' | 'outline') => void
+  setOutlineFocus: (v: { nodeId: string; ts: number } | null) => void
+  setOutlineView: (v: 'list' | 'chapters' | 'mindmap') => void
   initFtue: () => Promise<void>
   finishFtue: () => Promise<void>
 }
@@ -104,6 +113,9 @@ export const useUiStore = create<UiState>((set, get) => ({
   sidebarTab: 'works',
   clueFocus: null,
   timelineFocus: null,
+  centralMode: 'editor',
+  outlineFocus: null,
+  outlineView: 'list',
   ftueDone: true,
 
   initTheme: async () => {
@@ -154,6 +166,9 @@ export const useUiStore = create<UiState>((set, get) => ({
   setSidebarTab: (t) => set({ sidebarTab: t }),
   setClueFocus: (v) => set({ clueFocus: v }),
   setTimelineFocus: (v) => set({ timelineFocus: v }),
+  setCentralMode: (v) => set({ centralMode: v }),
+  setOutlineFocus: (v) => set({ outlineFocus: v }),
+  setOutlineView: (v) => set({ outlineView: v }),
   initFtue: async () => {
     const done = await window.api.settings.get('ftueDone')
     set({ ftueDone: done === true })

@@ -20,7 +20,12 @@ function stubSettingsApi(overrides: Record<string, unknown> = {}): {
 } {
   const get = vi.fn(async () => null)
   const set = vi.fn(async () => true)
-  stubApi({ settings: { get, set }, ...overrides })
+  stubApi({
+    settings: { get, set },
+    stats: { totals: vi.fn(async () => ({ workChars: 1234, totalChars: 5678 })) },
+    app: { version: vi.fn(async () => '0.1.0') },
+    ...overrides
+  })
   return { get, set }
 }
 
@@ -64,13 +69,14 @@ describe('菜单栏调整：AI 条目移除 / 视图精简 / 设置菜单保留�
 })
 
 describe('设置弹窗：左右分栏（左侧固定侧边栏 + 右侧内容区）', () => {
-  it('左侧侧边栏集中展示全部设置大类（AI 服务 / 格式 / 写作目标）', () => {
+  it('左侧侧边栏集中展示全部设置大类（AI 服务 / 格式 / 写作目标 / 关于）', () => {
     stubSettingsApi()
     render(<SettingsDialog onClose={() => {}} />)
     // 全部分类同时展示在侧边栏，默认选中「AI 服务」
     expect(screen.getByRole('button', { name: 'AI 服务' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '格式' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '写作目标' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '关于' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'AI 服务' }).className).toContain('brand-50')
   })
 
@@ -129,7 +135,7 @@ describe('设置弹窗：左右分栏（左侧固定侧边栏 + 右侧内容区�
       if (key === 'dailyGoal') return 2500
       return null
     })
-    stubApi({ settings: { get, set: vi.fn(async () => true) } })
+    stubSettingsApi({ settings: { get, set: vi.fn(async () => true) } })
     render(<SettingsDialog onClose={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: '写作目标' }))
     // 等待 loadStats 异步刷新完成
@@ -143,6 +149,41 @@ describe('设置弹窗：左右分栏（左侧固定侧边栏 + 右侧内容区�
     // 当前章节字数 + 目标输入
     expect(screen.getByText('当前章节字数')).toBeInTheDocument()
     expect(screen.getByText('每日目标字数')).toBeInTheDocument()
+  })
+
+  it('写作目标分类：作品字数统计模块展示当前作品与全部作品累计字数', async () => {
+    stubSettingsApi()
+    render(<SettingsDialog onClose={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: '写作目标' }))
+    // 等待 refreshWordTotals 异步刷新完成
+    await screen.findByText('作品字数统计')
+    expect(screen.getByText('当前作品总字数')).toBeInTheDocument()
+    expect(screen.getByText('全部作品累计字数')).toBeInTheDocument()
+    expect(screen.getByText('1,234')).toBeInTheDocument()
+    expect(screen.getByText('5,678')).toBeInTheDocument()
+  })
+
+  it('关于分类：展示应用版本号与按时间倒序的更新信息（含发布/新增/修复）', async () => {
+    stubSettingsApi()
+    render(<SettingsDialog onClose={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: '关于' }))
+    // 等待版本号异步加载
+    await screen.findByText('v0.1.0')
+    // 当前版本卡片
+    expect(screen.getByText('续言 Continuum')).toBeInTheDocument()
+    expect(screen.getByText('当前版本')).toBeInTheDocument()
+    expect(screen.getByText('版本与更新信息')).toBeInTheDocument()
+    // 更新信息列表：最新版本标记 + 发布日期 + 新增功能 + 问题修复
+    expect(screen.getByText('更新信息')).toBeInTheDocument()
+    expect(screen.getByText('最新')).toBeInTheDocument()
+    expect(screen.getByText('2026-08-14')).toBeInTheDocument()
+    expect(screen.getByText(/单栏所见即所得编辑器/)).toBeInTheDocument()
+    expect(screen.getByText(/修复：移除双栏对比模式/)).toBeInTheDocument()
+    // 早期迭代条目按倒序保留
+    expect(screen.getByText('0.1.0-rc')).toBeInTheDocument()
+    expect(screen.getByText('0.1.0-beta')).toBeInTheDocument()
+    // AI 设置项不在关于分类
+    expect(screen.queryByText('服务商')).toBeNull()
   })
 
   it('写作目标分类：修改并保存每日目标 → 写入 settings dailyGoal 并关闭弹窗', async () => {
