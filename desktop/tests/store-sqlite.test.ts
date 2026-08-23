@@ -26,6 +26,14 @@ describe('SqliteWorksStore（SQLite 存储实现，sql.js）', () => {
     expect(store.listWorks()).toHaveLength(0)
   })
 
+  it('作品题材 genre 持久化（works 表 genre 列）', () => {
+    const w = store.createWork('都市新作', '简介', '都市')
+    expect(store.getWork(w.id)?.genre).toBe('都市')
+    expect(store.listWorks()[0].genre).toBe('都市')
+    const legacy = store.createWork('旧作')
+    expect(legacy.genre).toBeUndefined()
+  })
+
   it('章节 CRUD，正文落盘为 Markdown 文件', () => {
     const w = store.createWork('测试')
     const c1 = store.createChapter(w.id, '第一章')

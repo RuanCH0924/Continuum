@@ -80,7 +80,9 @@ describe('appStore（写作统计：今日净增字数 / 目标 / 保存时间�
       .fn()
       .mockResolvedValueOnce({ todayChars: 321, todayDate: today() })
       .mockResolvedValueOnce(5000)
-    vi.stubGlobal('window', { api: { settings: { get } } })
+      .mockResolvedValueOnce({}) // dailyStats（旧数据缺失当日时回填，需 set 可用）
+    const set = vi.fn(async () => true)
+    vi.stubGlobal('window', { api: { settings: { get, set } } })
     await useAppStore.getState().loadStats()
     expect(useAppStore.getState().todayChars).toBe(321)
     expect(useAppStore.getState().todayDate).toBe(today())

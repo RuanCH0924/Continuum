@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type {
   ChapterMeta,
   ChapterOutline,
+  DailyStats,
   DeleteNotesResult,
   MindMap,
   MindMapNode,
@@ -57,6 +58,8 @@ interface ContinuumState {
   workChars: number
   /** 该账号全部作品累计总字数（正文 + 备注内容；写作目标板块） */
   totalChars: number
+  /** 每日写作字数记录（YYYY-MM-DD → 净增字数；首页数据统计趋势图数据源） */
+  dailyStats: DailyStats
 
   loadWorks: () => Promise<void>
   loadStats: () => Promise<void>
@@ -69,7 +72,7 @@ interface ContinuumState {
   loadArchivedNotes: (kind?: NoteKind) => Promise<void>
   selectWork: (id: string) => Promise<void>
   selectChapter: (seq: number) => Promise<void>
-  createWork: (title: string, description?: string) => Promise<void>
+  createWork: (title: string, description?: string, genre?: string) => Promise<void>
   createChapter: (title: string) => Promise<void>
   renameWork: (id: string, title: string) => Promise<void>
   renameChapter: (seq: number, title: string) => Promise<void>
@@ -151,6 +154,7 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
   prevSavedCount: 0,
   workChars: 0,
   totalChars: 0,
+  dailyStats: {},
 
   loadWorks: async () => {
     set({ loading: true })
@@ -171,13 +175,21 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
       | null
       | undefined
     const goal = await window.api.settings.get('dailyGoal')
+    const dailyStats = (await window.api.settings.get('dailyStats')) as DailyStats | null | undefined
     const today = new Date().toISOString().slice(0, 10)
     const sameDay = stats?.todayDate === today
+    const ds = { ...(dailyStats ?? {}) }
+    // 旧数据兼容：今日字数已有记录但 dailyStats 缺失时回填当日，保证趋势图口径一致
+    if (sameDay && (stats?.todayChars ?? 0) > 0 && !ds[today]) {
+      ds[today] = stats?.todayChars ?? 0
+      void window.api.settings.set('dailyStats', ds)
+    }
     set({
       todayChars: sameDay ? (stats?.todayChars ?? 0) : 0,
       todayDate: stats?.todayDate ?? '',
       dailyGoal: typeof goal === 'number' ? goal : 2500,
-      goalNotifiedToday: sameDay && stats?.goalNotified === true
+      goalNotifiedToday: sameDay && stats?.goalNotified === true,
+      dailyStats: ds
     })
   },
 
@@ -253,8 +265,8 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
     })
   },
 
-  createWork: async (title: string, description?: string) => {
-    await window.api.works.create(title, description)
+  createWork: async (title: string, description?: string, genre?: string) => {
+    await window.api.works.create(title, description, genre)
     await get().loadWorks()
   },
 
@@ -325,7 +337,8 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
       dailyGoal,
       goalNotifiedToday,
       workChars,
-      totalChars
+      totalChars,
+      dailyStats
     } = get()
     if (!currentWorkId) return
     await window.api.chapters.save(currentWorkId, seq, title, content)
@@ -336,6 +349,9 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
     const today = new Date().toISOString().slice(0, 10)
     const tChars = todayDate === today ? todayChars + delta : delta
     const now = Date.now()
+    // 每日写作记录（首页数据统计趋势图）：与今日净增同源，跨天自动开新日
+    const ds = { ...dailyStats }
+    ds[today] = (ds[today] ?? 0) + delta
     // 目标达成：首次达到时推送一次鼓励（跨天重置）
     const reached = !goalNotifiedToday && dailyGoal > 0 && tChars >= dailyGoal
     await window.api.settings.set('stats', {
@@ -343,6 +359,7 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
       todayDate: today,
       goalNotified: goalNotifiedToday || reached
     })
+    await window.api.settings.set('dailyStats', ds)
     set({
       prevSavedCount: cur,
       charCount: cur,
@@ -352,7 +369,8 @@ export const useAppStore = create<ContinuumState>((set, get) => ({
       goalNotifiedToday: goalNotifiedToday || reached,
       // 作品/全库字数随净增同步（初始基线由 refreshWordTotals 全量校准，避免重复计数）
       workChars: workChars + delta,
-      totalChars: totalChars + delta
+      totalChars: totalChars + delta,
+      dailyStats: ds
     })
     if (reached) {
       useToastStore.getState().notify('success', `今日目标达成！已写 ${tChars.toLocaleString('zh-CN')} 字，继续保持`)

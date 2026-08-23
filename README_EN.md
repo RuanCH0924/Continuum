@@ -1,11 +1,11 @@
-# Continuum (续言)
+﻿# Continuum (续言)
 
 > Let the story continue — an open-source desktop writing tool for Chinese web novel authors
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-2D7FF9)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
-![Tests](https://img.shields.io/badge/tests-209%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-242%20passing-brightgreen)
 [中文](./README.md)
 
 **Continuum (续言)** is an open-source writing tool for Chinese web novels. It keeps all your creative data local and connects to any OpenAI-compatible AI model through a unified adapter, so serial authors can organize their stories and keep the words flowing.
@@ -30,7 +30,7 @@ We don't intend to replace any existing writing product. Instead, we build aroun
 | Import / Export (MD · TXT · PDF · EPUB · DOCX) | ✅ Done |
 | Global full-text search / version history / RAG semantic search | ✅ Done |
 | Plugin mechanism / SQLite storage engine | ✅ Done |
-| Unit tests | ✅ 209 passing (27 test files, incl. UI components) |
+| Unit tests | ✅ 242 passing (29 test files, incl. UI components) |
 | Packaging (electron-builder) | ⏳ Deferred |
 
 ---
@@ -82,6 +82,11 @@ We don't intend to replace any existing writing product. Instead, we build aroun
 - **Version history**: Ctrl+S snapshots the current chapter (50 per chapter), preview & restore anytime
 - **Welcome page & work wizard**: New / Import / Example entries when no works exist; the wizard collects genre, planned length, daily goal and default volume name
 
+### 🏠 Home (Work Gallery + Statistics)
+
+- **Work gallery**: the app opens on a shelf dashboard with work cards (gradient cover / title / genre / summary / created date); keyword search + genre filter chips + pagination; hover lift animation on desktop, tap-press feedback on touch; clicking a card opens the work detail (editor)
+- **Statistics**: four metric cards (work count / total words / today's words incl. goal progress / period words) with animated number transitions; a bar chart switchable across week / month / year with hover tooltips, grow-in redraw on period switch and smooth height transitions on data updates (daily word counts are recorded locally and accumulate across days)
+
 ### 📥 Import / Export
 
 - **Markdown import**: as a new work (+ first chapter) or appended as a new chapter of the current work
@@ -91,7 +96,7 @@ We don't intend to replace any existing writing product. Instead, we build aroun
 
 ### 🤖 AI Assistant
 
-- **Unified adapter**: any OpenAI-compatible endpoint — config (API Key / Base URL / Model) + temperature + connection validation + optional Embedding model
+- **Unified adapter**: custom providers beyond the presets, compatible with **OpenAI / Anthropic / Coze** API formats (auto-switched: `/chat/completions` · `/v1/messages` · `/v3/chat`) — config (API Key / Base URL / Model) + temperature + connection validation + optional Embedding model
 - **Streaming chat**: supports chat / polish / continue / knowledge base scenarios, with optional "attach current chapter" and "inject knowledge base" (RAG reference snippets) — both on by default
 - **Selection tools**: a floating bar appears on selection (polish / rewrite / translate / summarize / continue); results are confirmed in a compare dialog (original vs result) and written back with one click (Ctrl+R / Ctrl+J / Ctrl+Shift+T / Ctrl+Enter)
 - **Transparent AI**: every request shows the injected context sources (e.g. "current chapter + 2 character cards"), so authors know what the AI is basing its answers on
@@ -139,7 +144,7 @@ npm run dev
 
 ```bash
 npm run typecheck   # TypeScript type check (main + renderer)
-npm test            # Vitest unit tests (209 cases / 27 files, all passing)
+npm test            # Vitest unit tests (242 cases / 29 files, all passing)
 npm run build       # Production build (out/)
 ```
 
@@ -154,10 +159,11 @@ The repo ships a sample work under `desktop/data/works/` so you can try the edit
 ## AI Configuration
 
 1. Open **AI Service Settings** from the top menu "设置" or the AI panel gear icon;
-2. Pick a provider preset (DeepSeek / OpenAI / SiliconFlow / Ollama) or enter a custom Base URL;
-3. Fill in your API key (not required for local services like Ollama), choose a model and adjust temperature;
-4. (Optional) Enter an **Embedding model** (e.g. `bge-large-zh` / `text-embedding-ada-002`) to enable semantic knowledge search; leave empty for keyword-only search;
-5. Click "Test Connection" to validate, then save. Config is stored locally in `data/settings.json` only.
+2. Pick a provider preset (DeepSeek / OpenAI / Anthropic / Coze / MiniMax / Kimi / Qwen / Zhipu GLM / Yi / SiliconFlow / Ollama) — or choose "**Custom provider…**" to plug in any service (e.g. a local gateway);
+3. Choose the **API format**: OpenAI-compatible (default) / Anthropic / Coze — Anthropic uses `/v1/messages` (`x-api-key` + `anthropic-version`); Coze uses `/v3/chat` (put your Bot ID in the model field, your PAT as the key);
+4. Fill in your API key (not required for local services like Ollama), choose a model and adjust temperature;
+5. (Optional) Enter an **Embedding model** (e.g. `bge-large-zh` / `text-embedding-ada-002`) to enable semantic knowledge search; leave empty for keyword-only search;
+6. Click "Test Connection" to validate, then save. Config is stored locally in `data/settings.json` only.
 
 > With "inject knowledge base" checked in the chat tab, every message auto-retrieves the current work's content and knowledge and injects it as reference snippets (skipped silently on failure); AI usage is subject to the daily quota.
 
@@ -250,7 +256,7 @@ Continuum/
 │   │   ├── lib/              # markdown, AI adapter, RAG injection, import/export, hotkeys, annotation linking
 │   │   └── styles/           # Design Tokens (CSS variables + theme matrix)
 │   ├── src/shared/           # IPC protocol (60 channels) & domain types (main/renderer shared)
-│   └── tests/                # Vitest unit tests (27 files / 209 cases, incl. RTL components)
+│   └── tests/                # Vitest unit tests (29 files / 242 cases, incl. RTL components)
 ├── design/                   # GUI design assets (prototype / spec / interaction docs)
 ├── docs/                     # Project docs (design doc / outline PRD / review reports / archive)
 ├── start_continuum.bat       # Windows one-click launcher
@@ -289,6 +295,8 @@ Continuum/
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 (Round 10) | AI access upgrade: custom providers beyond presets; unified client supports OpenAI / Anthropic / Coze API formats across chat, writing tools and chapter-outline extraction; new presets incl. Anthropic / Coze / MiniMax / Kimi / Qwen / Zhipu GLM / Yi and a format selector; 242 tests |
+| 2026-08-23 (Round 9) | Home module: work gallery (cards + search / genre filter / pagination + hover & touch animations, click-through to detail) and statistics (metric cards + week/month/year writing bar chart with smooth transitions); "Home" header entry & breadcrumb return; data layer adds work genre (dual-engine persistence) and daily word records; 229 tests |
 | 2026-08-16 (Round 8) | Outline module: outline workspace (outline tree / chapter outlines / mind map), granularity toggle, rhythm tags & estimated words, chapter-outline management, SVG mind map (3 templates + XMind import + bi-directional generation with outline), AI chapter-outline extraction (quota-based), outline-anchored Q&A, daily AI quota ledger; 209 tests |
 | 2026-08-14 (Round 7) | Removed split-pane editing: single-pane live Markdown rendering (WYSIWYG), modes reduced to Edit/Preview/Source; 91 tests |
 | 2026-08-14 (Round 6) | Timeline module (CRUD / reorder / inline realtime storage); body time-node highlight ↔ sidebar timeline entries bidirectional linking; 86 tests |

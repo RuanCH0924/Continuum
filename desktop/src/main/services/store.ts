@@ -55,7 +55,7 @@ export interface IWorksStore {
   listWorks(): WorkMeta[]
   getWork(id: string): WorkMeta | null
   worksDirOf(workId: string): string
-  createWork(title: string, description?: string): WorkMeta
+  createWork(title: string, description?: string, genre?: string): WorkMeta
   renameWork(id: string, title: string): boolean
   deleteWork(id: string): boolean
   listChapters(workId: string): ChapterMeta[]
@@ -136,12 +136,13 @@ export class WorksStore implements IWorksStore {
     return path.join(this.worksDir, workId)
   }
 
-  createWork(title: string, description = ''): WorkMeta {
+  createWork(title: string, description = '', genre = ''): WorkMeta {
     const now = Date.now()
     const meta: WorkMeta = {
       id: `work_${now}_${randomUUID().slice(0, 6)}`,
       title,
       description,
+      genre: genre.trim() || undefined,
       createdAt: now,
       updatedAt: now
     }

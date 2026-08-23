@@ -6,6 +6,7 @@ import { ResizeHandle } from './components/ResizeHandle'
 import { EditorArea } from './components/EditorArea'
 import { OutlineWorkspace } from './components/outline/OutlineWorkspace'
 import { WelcomeView } from './components/WelcomeView'
+import { HomePage } from './components/home/HomePage'
 import { SettingsDialog } from './components/SettingsDialog'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutHelp } from './components/ShortcutHelp'
@@ -280,7 +281,7 @@ export default function App(): React.JSX.Element {
             onDragEnd={() => void useUiStore.getState().persistPanelSizes()}
           />
         )}
-        {ready && works.length === 0 ? <WelcomeView /> : centralMode === 'outline' && currentWorkId ? <OutlineWorkspace /> : <EditorArea />}
+        {ready && works.length === 0 ? <WelcomeView /> : centralMode === 'home' ? <HomePage /> : centralMode === 'outline' && currentWorkId ? <OutlineWorkspace /> : <EditorArea />}
         {!immersed && !aiCollapsed && (
           <ResizeHandle
             direction="right"

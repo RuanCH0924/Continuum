@@ -222,3 +222,50 @@ describe('格式设置功能保留（独立弹窗与设置中心双入口可用�
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 })
+
+describe('AI 服务设置：自定义服务商与接口格式（OpenAI / Anthropic / Coze）', () => {
+  it('选择「自定义服务商…」后可填写名称，切换接口格式后保存携带 apiFormat', async () => {
+    const { set } = stubSettingsApi()
+    const onClose = vi.fn()
+    render(<SettingsDialog onClose={onClose} />)
+    // 服务商下拉（第一个 combobox）→ 自定义
+    const providerSelect = screen.getAllByRole('combobox')[0]
+    fireEvent.change(providerSelect, { target: { value: '__custom__' } })
+    const nameInput = screen.getByPlaceholderText('如：Moonshot / 智谱 GLM / 本地网关…')
+    fireEvent.change(nameInput, { target: { value: 'Moonshot' } })
+    // 接口格式下拉（第二个 combobox）→ Anthropic
+    const formatSelect = screen.getAllByRole('combobox')[1]
+    fireEvent.change(formatSelect, { target: { value: 'anthropic' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() =>
+      expect(set).toHaveBeenCalledWith(
+        'ai',
+        expect.objectContaining({ provider: 'Moonshot', apiFormat: 'anthropic' })
+      )
+    )
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('选中 Coze 预设：同步接口格式，模型字段变更为 Bot ID 并给出粘贴提示', () => {
+    stubSettingsApi()
+    render(<SettingsDialog onClose={() => {}} />)
+    const providerSelect = screen.getAllByRole('combobox')[0]
+    fireEvent.change(providerSelect, { target: { value: 'coze' } })
+    // 接口格式跟随预设切到 coze
+    expect(screen.getAllByRole('combobox')[1]).toHaveValue('coze')
+    // 模型字段标签与 Bot ID 占位
+    expect(screen.getByText('Bot ID')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('粘贴 Coze Bot ID')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('粘贴 Coze PAT（个人访问令牌）')).toBeInTheDocument()
+  })
+
+  it('接口格式下拉提供 OpenAI / Anthropic / Coze 三个选项', () => {
+    stubSettingsApi()
+    render(<SettingsDialog onClose={() => {}} />)
+    const formatSelect = screen.getAllByRole('combobox')[1]
+    expect(screen.getByRole('option', { name: 'OpenAI 兼容（/chat/completions）' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Anthropic（/v1/messages）' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Coze 扣子（/v3/chat）' })).toBeInTheDocument()
+    expect(formatSelect).toHaveValue('openai')
+  })
+})

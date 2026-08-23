@@ -29,8 +29,8 @@ export function WorkWizard({ onClose }: { onClose: () => void }): React.JSX.Elem
     if (!name.trim() || saving) return
     setSaving(true)
     const app = useAppStore.getState()
-    const description = [subtitle.trim(), genre.trim() ? `题材：${genre.trim()}` : '', desc.trim()].filter(Boolean).join('\n')
-    await app.createWork(name.trim(), description)
+    const description = [subtitle.trim(), desc.trim()].filter(Boolean).join('\n')
+    await app.createWork(name.trim(), description, genre.trim())
     const g = Number(goal)
     if (g > 0) await window.api.settings.set('dailyGoal', g)
     if (createFirst) {

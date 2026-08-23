@@ -102,7 +102,7 @@ export function AIPanel({
   }
 
   // 模型下拉：预设模型 + 当前自定义模型
-  const modelOptions = [...new Set([config.model, ...PROVIDER_PRESETS.map((p) => p.model)])]
+  const modelOptions = [...new Set([config.model, ...PROVIDER_PRESETS.map((p) => p.model)])].filter((m) => m.trim())
 
   if (collapsed) {
     return (

@@ -40,6 +40,8 @@ export function Header(): React.JSX.Element {
   const setToolsOpen = useUiStore((s) => s.setToolsOpen)
   const setSearchOpen = useUiStore((s) => s.setSearchOpen)
   const setPromptKind = useUiStore((s) => s.setPromptKind)
+  const centralMode = useUiStore((s) => s.centralMode)
+  const setCentralMode = useUiStore((s) => s.setCentralMode)
 
   const history = useToastStore((s) => s.history)
   const clearAll = useToastStore((s) => s.clearAll)
@@ -179,6 +181,14 @@ export function Header(): React.JSX.Element {
         </div>
 
         <nav className="flex flex-1 items-center gap-0.5">
+          {/* 「首页」常驻入口：数据仪表台（作品展览 + 数据统计），写作中可随时返回 */}
+          <button
+            className={`top-menu-btn ${centralMode === 'home' ? 'bg-neutral-100 font-medium text-brand-500' : ''}`}
+            title="返回首页（作品展览与数据统计）"
+            onClick={() => setCentralMode('home')}
+          >
+            首页
+          </button>
           {MENU_LABELS.map((label) => (
             <div key={label} className="relative">
               <button
@@ -286,9 +296,15 @@ export function Header(): React.JSX.Element {
         </div>
       </div>
 
-      {/* 第二行：面包屑 */}
+      {/* 第二行：面包屑（点击「我的书架」返回首页） */}
       <div className="flex h-[30px] items-center gap-2 border-t border-neutral-200 px-4 text-[11px] text-neutral-500">
-        <span className="text-neutral-400">我的书架</span>
+        <button
+          className="text-neutral-400 transition-colors duration-fast hover:text-brand-500"
+          title="返回首页"
+          onClick={() => setCentralMode('home')}
+        >
+          我的书架
+        </button>
         {workTitle && (
           <>
             <span className="text-neutral-300">▸</span>

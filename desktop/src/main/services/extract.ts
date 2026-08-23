@@ -1,7 +1,7 @@
 /**
  * 智能章纲提取服务（PRD v1.0 §9）。
  *
- * 主进程排队执行（并发 1），逐章调用 OpenAI 兼容接口（默认 DeepSeek），
+ * 主进程排队执行（并发 1），逐章调用统一 AI 客户端（OpenAI / Anthropic / Coze 三格式，随配置切换），
  * 解析结构化章纲并写入存储；每成功 1 章经 AiQuotaService 消耗 1 次配额。
  * 失败 / 跳过 / 取消均不消耗配额。
  */
@@ -12,12 +12,14 @@ import type {
   OutlineExtractRequest,
   OutlineExtractResult
 } from '../../shared/types'
+import { chatOnce, normalizeApiFormat, type AiChatMessage, type AiClientConfig } from '../../shared/aiClient'
 import type { IWorksStore } from './store'
 import type { AiQuotaService } from './quota'
 
 /** 主进程侧 AI 配置形态（与渲染层 lib/ai/types.ts 的 AIConfig 语义一致）。 */
 export interface MainAIConfig {
   provider: string
+  apiFormat?: AiClientConfig['apiFormat']
   apiKey: string
   baseUrl: string
   model: string
@@ -43,34 +45,22 @@ const EXTRACT_SYSTEM =
   '{"corePlot":"本章核心剧情（≤120字）","characterScenes":"本章角色互动场景（≤120字）",' +
   '"conflict":"本章关键冲突点（≤80字）","hook":"章末钩子/悬念（≤60字，无则空字符串）"}'
 
-/** 单次非流式 chat 调用（OpenAI 兼容 /chat/completions）。 */
-async function chatOnce(config: MainAIConfig, system: string, user: string): Promise<string> {
-  if (!config.apiKey && !isLocalProvider(config)) {
-    throw new Error('未配置 API Key，请先在「设置 → AI 服务」中填写')
+/** 单次非流式 chat 调用（协议随配置 apiFormat 自动切换，超时 60s）。 */
+async function chatOnceForExtract(config: MainAIConfig, system: string, user: string): Promise<string> {
+  const messages: AiChatMessage[] = [
+    { role: 'system', content: system },
+    { role: 'user', content: user }
+  ]
+  const clientConfig: AiClientConfig = {
+    provider: config.provider,
+    apiFormat: normalizeApiFormat(config.provider, config.apiFormat),
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl,
+    model: config.model,
+    temperature: config.temperature,
+    local: isLocalProvider(config)
   }
-  const url = config.baseUrl.replace(/\/+$/, '') + '/chat/completions'
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (config.apiKey) headers.Authorization = `Bearer ${config.apiKey}`
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: config.model,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ],
-      stream: false,
-      temperature: config.temperature
-    }),
-    signal: AbortSignal.timeout(60000)
-  })
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '')
-    throw new Error(`AI 请求失败（HTTP ${resp.status}）：${text.slice(0, 200)}`)
-  }
-  const data = (await resp.json()) as { choices?: { message?: { content?: string } }[] }
-  return data.choices?.[0]?.message?.content ?? ''
+  return chatOnce(clientConfig, messages, { timeoutMs: 60000 })
 }
 
 /** 从模型输出中提取 JSON 对象（容忍前后缀文本与代码块包裹）。 */
@@ -202,7 +192,7 @@ export class ExtractService {
   private async extractOnceWithRetry(config: MainAIConfig, user: string): Promise<string> {
     let lastRaw = ''
     for (let attempt = 0; attempt < 2; attempt++) {
-      lastRaw = await chatOnce(config, EXTRACT_SYSTEM, user)
+      lastRaw = await chatOnceForExtract(config, EXTRACT_SYSTEM, user)
       if (parseChapterOutlineJson(lastRaw)) return lastRaw
     }
     throw new Error('章纲解析失败（输出不符合 JSON 格式）')

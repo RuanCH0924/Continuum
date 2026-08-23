@@ -124,6 +124,9 @@ export class SqliteWorksStore implements IWorksStore {
     if (!noteCols.includes('anchor_offset')) this.db.run('ALTER TABLE notes ADD COLUMN anchor_offset INTEGER')
     if (!noteCols.includes('archived')) this.db.run('ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0')
     if (!noteCols.includes('archived_at')) this.db.run('ALTER TABLE notes ADD COLUMN archived_at INTEGER')
+    // 作品题材（首页作品展览分类筛选；旧库无该列时补列）
+    const workCols = this.columnNames('works')
+    if (!workCols.includes('genre')) this.db.run('ALTER TABLE works ADD COLUMN genre TEXT')
   }
 
   /** 获取表列名（用于幂等迁移判定）。 */
@@ -161,11 +164,12 @@ export class SqliteWorksStore implements IWorksStore {
 
   // ============================================================ 作品
   listWorks(): WorkMeta[] {
-    const rows = this.all('SELECT id, title, description, created_at, updated_at FROM works')
+    const rows = this.all('SELECT id, title, description, genre, created_at, updated_at FROM works')
     const works = rows.map((r) => ({
       id: String(r.id),
       title: String(r.title),
       description: String(r.description ?? ''),
+      genre: r.genre ? String(r.genre) : undefined,
       createdAt: Number(r.created_at),
       updatedAt: Number(r.updated_at)
     }))
@@ -179,6 +183,7 @@ export class SqliteWorksStore implements IWorksStore {
       id: String(r.id),
       title: String(r.title),
       description: String(r.description ?? ''),
+      genre: r.genre ? String(r.genre) : undefined,
       createdAt: Number(r.created_at),
       updatedAt: Number(r.updated_at)
     }
@@ -188,22 +193,20 @@ export class SqliteWorksStore implements IWorksStore {
     return path.join(this.worksDir, workId)
   }
 
-  createWork(title: string, description = ''): WorkMeta {
+  createWork(title: string, description = '', genre = ''): WorkMeta {
     const now = Date.now()
     const meta: WorkMeta = {
       id: `work_${now}_${Math.random().toString(16).slice(2, 8)}`,
       title,
       description,
+      genre: genre.trim() || undefined,
       createdAt: now,
       updatedAt: now
     }
-    this.run('INSERT INTO works VALUES (?, ?, ?, ?, ?)', [
-      meta.id,
-      meta.title,
-      meta.description,
-      meta.createdAt,
-      meta.updatedAt
-    ])
+    this.run(
+      'INSERT INTO works (id, title, description, genre, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [meta.id, meta.title, meta.description, genre.trim() || null, meta.createdAt, meta.updatedAt]
+    )
     this.persist()
     return meta
   }

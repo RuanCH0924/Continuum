@@ -98,6 +98,7 @@ interface AiState {
 export const useAiStore = create<AiState>((set, get) => ({
   config: {
     provider: 'deepseek',
+    apiFormat: 'openai',
     apiKey: '',
     baseUrl: 'https://api.deepseek.com/v1',
     model: 'deepseek-chat',

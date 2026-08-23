@@ -24,8 +24,8 @@ export function registerIpc(
 ): void {
   // ---------------- works ----------------
   ipcMain.handle(IPC.WorksList, () => store.listWorks())
-  ipcMain.handle(IPC.WorksCreate, (_e, title: string, description?: string) =>
-    store.createWork(title ?? '', description ?? '')
+  ipcMain.handle(IPC.WorksCreate, (_e, title: string, description?: string, genre?: string) =>
+    store.createWork(title ?? '', description ?? '', genre ?? '')
   )
   ipcMain.handle(IPC.WorksRename, (_e, id: string, title: string) =>
     store.renameWork(id, title)

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { PROVIDER_PRESETS, presetByKey } from '../lib/ai/registry'
+import { PROVIDER_PRESETS, presetByKey, apiFormatOf, CUSTOM_PROVIDER_KEY } from '../lib/ai/registry'
 import { validateConfig } from '../lib/ai/openaiCompat'
 import { useAiStore } from '../stores/aiStore'
 import { useAppStore } from '../stores/appStore'
@@ -83,7 +83,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.
   )
 }
 
-/** AI 服务设置表单（原「AI 服务设置」弹窗全部设置项与交互）。 */
+/** AI 服务设置表单（原「AI 服务设置」弹窗全部设置项与交互 + 自定义服务商 / 接口格式）。 */
 function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Element {
   const config = useAiStore((s) => s.config)
   const configLoaded = useAiStore((s) => s.configLoaded)
@@ -103,9 +103,19 @@ function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Eleme
     if (configLoaded) setForm(config)
   }, [configLoaded, config])
 
+  const isCustom = !presetByKey(form.provider)
+  const selectValue = isCustom ? CUSTOM_PROVIDER_KEY : form.provider
+
   const pickProvider = (key: string): void => {
+    if (key === CUSTOM_PROVIDER_KEY) {
+      // 进入自定义编辑态：清空服务商名待填写（保留 baseUrl / model / apiKey 等既有字段）
+      setForm((f) => ({ ...f, provider: '' }))
+      return
+    }
     const preset = presetByKey(key)
-    if (preset) setForm((f) => ({ ...f, provider: preset.key, baseUrl: preset.baseUrl, model: preset.model }))
+    if (preset) {
+      setForm((f) => ({ ...f, provider: preset.key, apiFormat: preset.apiFormat, baseUrl: preset.baseUrl, model: preset.model }))
+    }
   }
 
   const handleValidate = async (): Promise<void> => {
@@ -118,27 +128,71 @@ function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Eleme
 
   const handleSave = async (): Promise<void> => {
     setSaving(true)
-    const ok = await saveConfig(form)
+    const ok = await saveConfig({ ...form, apiFormat: apiFormatOf(form) })
     setSaving(false)
     if (ok) onSaved()
     else setCheckMsg({ ok: false, text: '保存失败，请重试' })
   }
 
+  // 按服务商 / 接口格式给出输入占位提示
+  const keyPlaceholder =
+    presetByKey(form.provider)?.needsKey === false
+      ? '本地服务无需 Key'
+      : form.apiFormat === 'coze'
+        ? '粘贴 Coze PAT（个人访问令牌）'
+        : 'sk-… / Bearer Token'
+  const modelPlaceholder = form.apiFormat === 'coze' ? '粘贴 Coze Bot ID' : '模型名称'
+
+  const inputCls =
+    'w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500'
+
   return (
     <>
       <div className="space-y-3 px-5 py-4 text-[12px]">
         <label className="block">
-          <span className="mb-1 block text-neutral-500">服务商</span>
+          <span className="mb-1 block text-neutral-500">
+            服务商
+            <span className="ml-1 text-[10px] text-neutral-300">预设之外可选「自定义服务商」自由接入</span>
+          </span>
           <select
-            value={form.provider}
+            value={selectValue}
             onChange={(e) => pickProvider(e.target.value)}
-            className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500"
+            className={inputCls}
           >
             {PROVIDER_PRESETS.map((p) => (
               <option key={p.key} value={p.key}>
                 {p.label}
               </option>
             ))}
+            <option value={CUSTOM_PROVIDER_KEY}>自定义服务商…</option>
+          </select>
+        </label>
+
+        {isCustom && (
+          <label className="block">
+            <span className="mb-1 block text-neutral-500">服务商名称（自定义）</span>
+            <input
+              value={form.provider}
+              onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))}
+              placeholder="如：Moonshot / 智谱 GLM / 本地网关…"
+              className={inputCls}
+            />
+          </label>
+        )}
+
+        <label className="block">
+          <span className="mb-1 block text-neutral-500">
+            接口格式
+            <span className="ml-1 text-[10px] text-neutral-300">OpenAI 兼容 / Anthropic / Coze 三选一</span>
+          </span>
+          <select
+            value={form.apiFormat}
+            onChange={(e) => setForm((f) => ({ ...f, apiFormat: e.target.value as AIConfig['apiFormat'] }))}
+            className={inputCls}
+          >
+            <option value="openai">OpenAI 兼容（/chat/completions）</option>
+            <option value="anthropic">Anthropic（/v1/messages）</option>
+            <option value="coze">Coze 扣子（/v3/chat）</option>
           </select>
         </label>
 
@@ -148,8 +202,8 @@ function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Eleme
             type="password"
             value={form.apiKey}
             onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
-            placeholder={presetByKey(form.provider)?.needsKey ? 'sk-…' : '本地服务无需 Key'}
-            className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500"
+            placeholder={keyPlaceholder}
+            className={inputCls}
           />
         </label>
 
@@ -159,28 +213,31 @@ function AiServiceSection({ onSaved }: { onSaved: () => void }): React.JSX.Eleme
             <input
               value={form.baseUrl}
               onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
-              className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500"
+              className={inputCls}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-neutral-500">模型</span>
+            <span className="mb-1 block text-neutral-500">
+              {form.apiFormat === 'coze' ? 'Bot ID' : '模型'}
+            </span>
             <input
               value={form.model}
               onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-              className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500"
+              placeholder={modelPlaceholder}
+              className={inputCls}
             />
           </label>
         </div>
 
         <label className="block">
           <span className="mb-1 block text-neutral-500">
-            Embedding 模型（知识库语义检索；留空则仅关键词匹配）
+            Embedding 模型（知识库语义检索；留空则仅关键词匹配，走 OpenAI 兼容 embeddings 端点）
           </span>
           <input
             value={form.embeddingModel ?? ''}
             onChange={(e) => setForm((f) => ({ ...f, embeddingModel: e.target.value }))}
             placeholder="如：bge-large-zh / text-embedding-ada-002"
-            className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-900 outline-none focus:border-brand-500"
+            className={inputCls}
           />
         </label>
 

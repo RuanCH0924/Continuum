@@ -49,8 +49,8 @@ const api = {
   },
   works: {
     list: (): Promise<WorkMeta[]> => ipcRenderer.invoke(IPC.WorksList),
-    create: (title: string, description?: string): Promise<WorkMeta> =>
-      ipcRenderer.invoke(IPC.WorksCreate, title, description),
+    create: (title: string, description?: string, genre?: string): Promise<WorkMeta> =>
+      ipcRenderer.invoke(IPC.WorksCreate, title, description, genre),
     rename: (id: string, title: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC.WorksRename, id, title),
     delete: (id: string): Promise<boolean> => ipcRenderer.invoke(IPC.WorksDelete, id)

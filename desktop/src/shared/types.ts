@@ -4,6 +4,8 @@ export interface WorkMeta {
   id: string
   title: string
   description: string
+  /** 题材分类（首页作品展览按此筛选；旧作品无该字段时回退解析简介「题材：xxx」） */
+  genre?: string
   createdAt: number
   updatedAt: number
 }
@@ -241,6 +243,9 @@ export interface WordCountTotals {
   workChars: number
   totalChars: number
 }
+
+/** 每日写作字数记录（key: YYYY-MM-DD → 当日净增字数；首页数据统计趋势图数据源，落 settings.dailyStats）。 */
+export type DailyStats = Record<string, number>
 
 /** AI 配额账本（每日 100 次，AI 功能全局共享）。 */
 export interface AiQuota {

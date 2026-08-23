@@ -25,6 +25,15 @@ describe('WorksStore（作品/章节/设置 CRUD）', () => {
     expect(w.id).toMatch(/^work_/)
   })
 
+  it('作品题材 genre 持久化到 meta.json', () => {
+    const w = store.createWork('武侠新作', '简介', '武侠')
+    expect(store.getWork(w.id)?.genre).toBe('武侠')
+    expect(store.listWorks()[0].genre).toBe('武侠')
+    // 旧作品缺省时 genre 为 undefined（不回退假值）
+    const legacy = store.createWork('旧作')
+    expect(legacy.genre).toBeUndefined()
+  })
+
   it('作品按更新时间倒序排列', () => {
     store.createWork('A')
     const b = store.createWork('B')

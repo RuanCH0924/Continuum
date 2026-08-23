@@ -51,8 +51,8 @@ interface UiState {
   clueFocus: { noteId: string; ts: number } | null
   /** 时间线条目聚焦信号（正文时间标注点击后定位条目） */
   timelineFocus: { entryId: string; ts: number } | null
-  /** 中央区域模式：写作（编辑器）/ 大纲（大纲工作台） */
-  centralMode: 'editor' | 'outline'
+  /** 中央区域模式：首页（数据仪表台）/ 写作（编辑器）/ 大纲（大纲工作台） */
+  centralMode: 'home' | 'editor' | 'outline'
   /** 大纲节点聚焦信号（侧栏/工作台导航点击后定位高亮） */
   outlineFocus: { nodeId: string; ts: number } | null
   /** 大纲工作台当前视图（提取完成跳转等场景可直达章纲） */
@@ -85,7 +85,8 @@ interface UiState {
   setSidebarTab: (t: SidebarTabKey) => void
   setClueFocus: (v: { noteId: string; ts: number } | null) => void
   setTimelineFocus: (v: { entryId: string; ts: number } | null) => void
-  setCentralMode: (v: 'editor' | 'outline') => void
+  /** 中央区域模式：首页（数据仪表台）/ 写作（编辑器）/ 大纲（大纲工作台） */
+  setCentralMode: (v: 'home' | 'editor' | 'outline') => void
   setOutlineFocus: (v: { nodeId: string; ts: number } | null) => void
   setOutlineView: (v: 'list' | 'chapters' | 'mindmap') => void
   initFtue: () => Promise<void>
@@ -113,7 +114,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   sidebarTab: 'works',
   clueFocus: null,
   timelineFocus: null,
-  centralMode: 'editor',
+  /** 中央区域模式：启动默认落在首页（数据仪表台） */
+  centralMode: 'home',
   outlineFocus: null,
   outlineView: 'list',
   ftueDone: true,

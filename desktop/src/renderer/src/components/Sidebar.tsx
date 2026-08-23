@@ -487,7 +487,11 @@ export function Sidebar({
           className={`group flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1 transition-colors duration-fast hover:bg-neutral-100 ${
             currentChapter?.seq === c.seq ? 'bg-brand-50 font-medium text-brand-500' : 'text-neutral-500 hover:text-neutral-900'
           }`}
-          onClick={() => void selectChapter(c.seq)}
+          onClick={() => {
+            void selectChapter(c.seq)
+            // 首页（数据仪表台）点击章节直达编辑器
+            if (useUiStore.getState().centralMode === 'home') setCentralMode('editor')
+          }}
           onDoubleClick={() => setPrompt({ type: 'rename-chapter', seq: c.seq, title: c.title })}
           onContextMenu={(e) =>
             openCtxMenu(e, [
@@ -527,7 +531,11 @@ export function Sidebar({
                 className={`group flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1 transition-colors duration-fast hover:bg-neutral-100 ${
                   currentWorkId === w.id ? 'bg-brand-50 font-medium text-brand-500' : 'text-neutral-900'
                 }`}
-                onClick={() => void selectWork(w.id)}
+                onClick={() => {
+                  void selectWork(w.id)
+                  // 首页（数据仪表台）点击作品直达编辑器
+                  if (useUiStore.getState().centralMode === 'home') setCentralMode('editor')
+                }}
                 onDoubleClick={() => setPrompt({ type: 'rename-work', id: w.id, title: w.title })}
                 onContextMenu={(e) =>
                   openCtxMenu(e, [
